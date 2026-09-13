@@ -1,0 +1,49 @@
+{
+  "products": [
+    { "id": 1, "name": "Notebook Pro Enterprise", "price": 4599.90, "category": "Eletrônicos", "inStock": true },
+    { "id": 2, "name": "Mouse Ergonômico Sem Fio", "price": 89.90, "category": "Periféricos", "inStock": true },
+    { "id": 3, "name": "Teclado Mecânico ABNT2", "price": 349.90, "category": "Periféricos", "inStock": false },
+    { "id": 4, "name": "Monitor Ultrawide 29\"", "price": 1899.00, "category": "Eletrônicos", "inStock": true },
+    { "id": 5, "name": "Headset com Cancelamento de Ruído", "price": 299.90, "category": "Áudio", "inStock": true },
+    { "id": 6, "name": "Webcam Full HD 1080p", "price": 179.90, "category": "Periféricos", "inStock": true },
+    { "id": 7, "name": "SSD 1TB NVMe M.2", "price": 449.90, "category": "Armazenamento", "inStock": false },
+    { "id": 8, "name": "Hub USB-C 8 em 1", "price": 199.90, "category": "Acessórios", "inStock": true }
+  ],
+  "users": [
+    { "id": 1, "name": "Ana Silva", "email": "ana.silva@empresa.com.br", "role": "Admin", "active": true },
+    { "id": 2, "name": "Carlos Oliveira", "email": "carlos.oliveira@empresa.com.br", "role": "User", "active": true },
+    { "id": 3, "name": "Marina Santos", "email": "marina.santos@empresa.com.br", "role": "Editor", "active": false },
+    { "id": 4, "name": "Pedro Costa", "email": "pedro.costa@empresa.com.br", "role": "User", "active": true },
+    { "id": 5, "name": "Juliana Lima", "email": "juliana.lima@empresa.com.br", "role": "Admin", "active": true }
+  ],
+  "tasks": [
+    { "id": 1, "title": "Migrar autenticação para JWT Bearer", "status": "Done", "priority": "High", "assigneeId": 1 },
+    { "id": 2, "title": "Implementar endpoints com Minimal APIs", "status": "InProgress", "priority": "Medium", "assigneeId": 2 },
+    { "id": 3, "title": "Substituir Newtonsoft.Json por System.Text.Json", "status": "Done", "priority": "Medium", "assigneeId": 3 },
+    { "id": 4, "title": "Otimizar queries LINQ no EF Core com AsNoTracking", "status": "InProgress", "priority": "Low", "assigneeId": 4 },
+    { "id": 5, "title": "Adicionar probes de Liveness e Readiness para k8s", "status": "Todo", "priority": "High", "assigneeId": 5 },
+    { "id": 6, "title": "Configurar Native AOT com trimming seguro", "status": "Todo", "priority": "Medium", "assigneeId": 1 }
+  ],
+  "metrics": {
+    "totalRequests": 1582340,
+    "avgResponseTimeMs": 42.7,
+    "errorRate": 0.003,
+    "activeUsers": 847,
+    "cacheHitRatio": 0.92,
+    "uptimePercentage": 99.97
+  },
+  "config": {
+    "appName": ".NET Modernization Lab",
+    "version": "1.0.0",
+    "locale": "pt-BR",
+    "maxPageSize": 50,
+    "defaultPageSize": 10,
+    "enableDetailedErrors": true,
+    "corsOrigins": ["http://localhost:5000", "http://localhost:5100"],
+    "featureFlags": {
+      "enableNewDashboard": true,
+      "enableBetaApi": false,
+      "enableCaching": true
+    }
+  }
+}

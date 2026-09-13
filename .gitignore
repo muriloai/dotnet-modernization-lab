@@ -1,0 +1,73 @@
+#  .NET Modernization Lab - Suporta .NET Framework 4.8.1 & .NET 10
+
+# Saidas de Compilacao (Build outputs) 
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+bld/
+artifacts/
+
+# Arquivos de Projeto e Configuracoes de Usuario 
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+project.lock.json
+project.fragment.lock.json
+
+# NuGet 
+**/packages/*
+!**/packages/build/
+*.nupkg
+**/[Pp]ackages/
+.nuget/
+nuget.exe
+
+# Visual Studio & Ferramentas Windows 
+.vs/
+*.rsuser
+_UpgradeReport_Files/
+UpgradeLog*.XML
+UpgradeLog*.htm
+
+# Visual Studio Code 
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# JetBrains Rider 
+.idea/
+*.sln.iml
+
+# Arquivos de Sistema Operacional 
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ASP.NET Legado & IIS Express 
+ScaffoldingReadMe.txt
+.iisexpress/
+
+# Perfis de Publicacao 
+PublishScripts/
+*.pubxml
+!**/PublishProfiles/*.pubxml
+
+# Bancos de Dados SQLite / Locais (Dev) 
+*.db
+*.db-shm
+*.db-wal
+*.mdf
+*.ldf
+
+# Logs e Arquivos Temporarios 
+logs/
+*.log
+*.tmp
