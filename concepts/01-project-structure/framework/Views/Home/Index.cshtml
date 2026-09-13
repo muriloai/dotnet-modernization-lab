@@ -1,0 +1,45 @@
+@{
+    ViewBag.Title = "Lab 01: Estrutura de Projeto (Framework 4.8.1)";
+}
+
+<span class="badge">Ambiente Legado: .NET Framework 4.8.1</span>
+<h1>Lab 01: Estrutura de Projeto e Bootstrap</h1>
+<p>Esta aplicação está sendo executada sob o modelo tradicional do <strong>Internet Information Services (IIS / IIS Express)</strong>.</p>
+
+<div class="card">
+    <h2>Informações do Servidor e Runtime</h2>
+    <ul class="feature-list">
+        <li><strong>Aplicação:</strong> @ViewBag.ApplicationName</li>
+        <li><strong>Ambiente:</strong> @ViewBag.Environment</li>
+        <li><strong>Servidor Web Hospedeiro:</strong> @ViewBag.ServerSoftware</li>
+        <li><strong>Framework Alvo:</strong> .NET Framework 4.8.1 (C# 7.3)</li>
+        <li><strong>Stack Web:</strong> ASP.NET MVC 5.2.9 + Web API 2.2</li>
+    </ul>
+</div>
+
+<div class="card">
+    <h2>Como Funciona a Inicialização no Legado (Global.asax.cs)</h2>
+    <p>No .NET Framework, a inicialização dependia de eventos de ciclo de vida herdados de <code>HttpApplication</code>.</p>
+    <pre><code>public class Global : System.Web.HttpApplication
+{
+    protected void Application_Start(object sender, EventArgs e)
+    {
+        // 1. Rotas Web API (tabela de rotas separada!)
+        GlobalConfiguration.Configure(WebApiConfig.Register);
+
+        // 2. Filtros globais do MVC
+        FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
+
+        // 3. Rotas MVC tradicionais
+        RouteConfig.RegisterRoutes(RouteTable.Routes);
+    }
+}</code></pre>
+</div>
+
+<div class="card">
+    <h2>Endpoints Disponíveis</h2>
+    <ul class="feature-list">
+        <li><a href="@Url.Content("~/api/info")">/api/info</a>: Endpoint Web API 2 serializado com Newtonsoft.Json.</li>
+        <li><a href="@Url.Action("Index", "Home")">/Home/Index</a>: View MVC 5 renderizada pela engine Razor clássica.</li>
+    </ul>
+</div>

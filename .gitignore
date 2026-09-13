@@ -71,3 +71,6 @@ PublishScripts/
 logs/
 *.log
 *.tmp
+
+# Temporários
+.docs/
