@@ -1,0 +1,52 @@
+@model EntityFrameworkDemo.Models.Produto
+@{
+    ViewBag.Title = "Novo Produto - EF 6";
+}
+
+<div style="margin-bottom: 1.5rem;">
+    <h1>Cadastrar Novo Produto</h1>
+    <p class="subtitle">Os dados serão validados e persistidos na base via AppDbContext do Entity Framework 6.</p>
+</div>
+
+<div class="card" style="max-width: 650px;">
+    @using (Html.BeginForm("Criar", "Produtos", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+
+        @Html.ValidationSummary(true, "", new { @class = "validation-summary" })
+
+        <div class="form-group">
+            @Html.LabelFor(m => m.Nome, "Nome do Produto", new { @class = "form-label" })
+            @Html.TextBoxFor(m => m.Nome, new { @class = "form-control", placeholder = "Ex: Placa Mãe B650" })
+            @Html.ValidationMessageFor(m => m.Nome, "", new { @class = "field-validation-error" })
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(m => m.CategoriaId, "Categoria", new { @class = "form-label" })
+            @Html.DropDownListFor(m => m.CategoriaId, (SelectList)ViewBag.Categorias, "Selecione uma categoria...", new { @class = "form-control" })
+            @Html.ValidationMessageFor(m => m.CategoriaId, "", new { @class = "field-validation-error" })
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(m => m.Preco, "Preço Unitário (R$)", new { @class = "form-label" })
+            @Html.TextBoxFor(m => m.Preco, new { @class = "form-control", type = "number", step = "0.01" })
+            @Html.ValidationMessageFor(m => m.Preco, "", new { @class = "field-validation-error" })
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(m => m.Estoque, "Quantidade em Estoque", new { @class = "form-label" })
+            @Html.TextBoxFor(m => m.Estoque, new { @class = "form-control", type = "number" })
+            @Html.ValidationMessageFor(m => m.Estoque, "", new { @class = "field-validation-error" })
+        </div>
+
+        <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem;">
+            @Html.CheckBoxFor(m => m.Ativo, new { id = "checkAtivo", style = "width: 1.2rem; height: 1.2rem;" })
+            <label for="checkAtivo" style="margin: 0; cursor: pointer; font-weight: 500;">Produto Ativo no Catálogo</label>
+        </div>
+
+        <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem;">
+            <button type="submit" class="btn btn-primary" style="background-color: var(--legacy-red);">Salvar no Banco</button>
+            <a href="@Url.Action("Index", "Produtos")" class="btn btn-secondary">Cancelar</a>
+        </div>
+    }
+</div>

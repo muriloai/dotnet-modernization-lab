@@ -41,6 +41,12 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | [06](concepts/06-controllers-actions/README.md) | Controllers e Actions               | Divisão entre Controller (MVC) e ApiController (Web API)      | ControllerBase unificado, [ApiController] e TypedResults                 | Concluído    |
 | [07](concepts/07-views-razor-templating/README.md) | Views, Razor e Templating           | Razor 3, HTML Helpers (@Html.*), Child Actions e MVC puro    | Tag Helpers (<input asp-*>), View Components, Razor Pages | Concluído    |
 
+### Dados e Persistência
+
+| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        | Status       |
+| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------ |
+| [08](concepts/08-entity-framework/README.md)  | Entity Framework: EF 6 vs EF Core 10 | DbContext clássico, Web.config, inicializadores e roundtrips individuais | EF Core 10, AddDbContext, AsSplitQuery, ExecuteUpdate/Delete e batching nativo | Concluído    |
+
 ---
 
 ## Pré-requisitos para Execução

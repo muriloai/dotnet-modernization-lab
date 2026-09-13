@@ -1,0 +1,115 @@
+@model System.Collections.Generic.IEnumerable<EntityFrameworkDemo.Models.Produto>
+@{
+    ViewBag.Title = "Produtos - EF 6 Clássico";
+}
+
+<div style="margin-bottom: 1.5rem;">
+    <h1>Catálogo de Produtos com Entity Framework 6</h1>
+    <p class="subtitle">Demonstração da persistência clássica com DbContext, consultas LINQ no IIS e a sobrecarga de operações sem batching nativo.</p>
+</div>
+
+@if (TempData["Sucesso"] != null)
+{
+    <div class="alert-success" style="margin-bottom: 1.5rem;">
+        @TempData["Sucesso"]
+    </div>
+}
+
+@if (TempData["OperacaoTitulo"] != null)
+{
+    <div class="card card-accent-legacy" style="margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <h3 style="margin: 0; font-size: 1.15rem; color: var(--dark);">@TempData["OperacaoTitulo"]</h3>
+            <span class="tag" style="background: #ffe3e3; color: #c92a2a;">Tempo: @TempData["OperacaoTempo"] ms</span>
+        </div>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 0.75rem;">@TempData["OperacaoDescricao"]</p>
+        <div class="code-box">
+            <strong>Comportamento SQL do EF 6:</strong>
+            <code>@TempData["OperacaoSql"]</code>
+        </div>
+    </div>
+}
+
+<div class="card" style="margin-bottom: 2rem;">
+    <h3 style="margin-bottom: 1rem; font-size: 1.15rem;">Painel de Operações do EF 6</h3>
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        @using (Html.BeginForm("InserirEmLote", "Produtos", FormMethod.Post, new { style = "display: inline;" }))
+        {
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-secondary">Inserir 5 Itens (Sem Batching)</button>
+        }
+
+        @using (Html.BeginForm("ReajustarPrecosEmMassa", "Produtos", FormMethod.Post, new { style = "display: inline;" }))
+        {
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-secondary">Reajustar Preços (+10% via Loop e SaveChanges)</button>
+        }
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h2 style="margin: 0; font-size: 1.3rem;">Produtos Cadastrados (@Model.Count())</h2>
+        <a href="@Url.Action("Criar", "Produtos")" class="btn btn-primary" style="background-color: var(--legacy-red);">+ Cadastrar Novo Produto</a>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Nome</th>
+                <th>Categoria</th>
+                <th>Preço</th>
+                <th>Estoque</th>
+                <th>Situação</th>
+                <th>Última Atualização</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var produto in Model)
+            {
+                <tr>
+                    <td>@produto.Id</td>
+                    <td><strong>@produto.Nome</strong></td>
+                    <td><span class="badge badge-legacy" style="margin-bottom: 0;">@(produto.Categoria != null ? produto.Categoria.Nome : "Sem Categoria")</span></td>
+                    <td>R$ @produto.Preco.ToString("N2")</td>
+                    <td>@produto.Estoque unid.</td>
+                    <td>
+                        @if (produto.Ativo)
+                        {
+                            <span style="color: var(--success); font-weight: 600;">Ativo</span>
+                        }
+                        else
+                        {
+                            <span style="color: var(--text-muted); font-style: italic;">Inativo</span>
+                        }
+                    </td>
+                    <td style="font-size: 0.85rem; color: var(--text-muted);">
+                        @produto.AtualizadoEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <h3>1. Ausência de Batching em SaveChanges</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem;">
+            No EF 6, ao adicionar ou alterar múltiplos registros, o SaveChanges envia um comando SQL isolado por entidade. Cada comando requer uma ida e volta individual de rede (roundtrip).
+        </p>
+    </div>
+    <div class="card">
+        <h3>2. Custo do Bulk Update Legado</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem;">
+            Atualizar múltiplos registros exigia carregar todas as linhas para a memória RAM da aplicação, iterar em um loop foreach e executar SaveChanges, consumindo memória e ciclos de CPU.
+        </p>
+    </div>
+    <div class="card">
+        <h3>3. Single Query Forçada em Joins</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem;">
+            No EF 6 não existia o recurso AsSplitQuery. Múltiplos Includes em coleções geravam uma única query gigantesca com vários LEFT JOINs, causando duplicação de dados na transferência de rede.
+        </p>
+    </div>
+</div>

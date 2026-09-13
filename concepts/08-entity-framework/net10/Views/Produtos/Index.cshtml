@@ -1,0 +1,123 @@
+@model IEnumerable<EntityFrameworkDemo.Models.Produto>
+@{
+    ViewData["Title"] = "Produtos - EF Core 10";
+}
+
+<div style="margin-bottom: 1.5rem;">
+    <h1>Catálogo de Produtos com EF Core 10</h1>
+    <p class="subtitle">Demonstração prática de batching automático, consultas com AsNoTracking/AsSplitQuery e operações diretas em massa com ExecuteUpdateAsync.</p>
+</div>
+
+@if (TempData["Sucesso"] != null)
+{
+    <div class="alert alert-success" style="margin-bottom: 1.5rem;">
+        @TempData["Sucesso"]
+    </div>
+}
+
+@if (TempData["OperacaoTitulo"] != null)
+{
+    <div class="card card-accent" style="margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <h3 style="margin: 0; font-size: 1.15rem; color: var(--dark);">@TempData["OperacaoTitulo"]</h3>
+            <span class="tag">Tempo: @TempData["OperacaoTempo"] ms</span>
+        </div>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 0.75rem;">@TempData["OperacaoDescricao"]</p>
+        <div class="code-box">
+            <strong>SQL equivalente gerado pelo EF Core:</strong>
+            <code>@TempData["OperacaoSql"]</code>
+        </div>
+    </div>
+}
+
+<div class="card" style="margin-bottom: 2rem;">
+    <h3 style="margin-bottom: 1rem; font-size: 1.15rem;">Painel de Operações do EF Core</h3>
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <form asp-action="InserirEmLote" method="post" style="display: inline;">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-secondary">Inserir 5 Itens em Lote (Batching)</button>
+        </form>
+
+        <form asp-action="ReajustarPrecosEmMassa" method="post" style="display: inline;">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-secondary">Reajustar Preços (+10% via ExecuteUpdate)</button>
+        </form>
+
+        <form asp-action="RemoverInativosEmMassa" method="post" style="display: inline;">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-secondary">Remover Inativos (ExecuteDelete)</button>
+        </form>
+
+        <form asp-action="ResetarBanco" method="post" style="display: inline;">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-danger">Resetar Dados</button>
+        </form>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h2 style="margin: 0; font-size: 1.3rem;">Produtos Cadastrados (@Model.Count())</h2>
+        <a asp-action="Criar" class="btn btn-primary">+ Cadastrar Novo Produto</a>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Nome</th>
+                <th>Categoria</th>
+                <th>Preço</th>
+                <th>Estoque</th>
+                <th>Situação</th>
+                <th>Última Atualização</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var produto in Model)
+            {
+                <tr>
+                    <td>@produto.Id</td>
+                    <td><strong>@produto.Nome</strong></td>
+                    <td><span class="badge" style="margin-bottom: 0;">@produto.Categoria?.Nome</span></td>
+                    <td>R$ @produto.Preco.ToString("N2")</td>
+                    <td>@produto.Estoque unid.</td>
+                    <td>
+                        @if (produto.Ativo)
+                        {
+                            <span style="color: var(--success); font-weight: 600;">Ativo</span>
+                        }
+                        else
+                        {
+                            <span style="color: var(--text-muted); font-style: italic;">Inativo</span>
+                        }
+                    </td>
+                    <td style="font-size: 0.85rem; color: var(--text-muted);">
+                        @produto.AtualizadoEm.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <h3>1. Batching Automático</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem;">
+            No EF Core, múltiplas inserções e alterações são agrupadas em um lote único de comandos SQL enviado em uma única requisição de rede, reduzindo drasticamente a latência.
+        </p>
+    </div>
+    <div class="card">
+        <h3>2. ExecuteUpdate e ExecuteDelete</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem;">
+            Permite atualizar ou remover linhas diretamente no servidor SQL sem carregar nenhuma entidade para a memória da aplicação e sem sobrecarregar o Garbage Collector.
+        </p>
+    </div>
+    <div class="card">
+        <h3>3. AsSplitQuery</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem;">
+            Evita a explosão cartesiana gerada por múltiplos joins em coleções relacionadas, dividindo a busca em consultas SQL separadas e eficientes.
+        </p>
+    </div>
+</div>

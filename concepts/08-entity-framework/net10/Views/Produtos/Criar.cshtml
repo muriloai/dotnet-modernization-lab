@@ -1,0 +1,53 @@
+@model EntityFrameworkDemo.Models.Produto
+@{
+    ViewData["Title"] = "Novo Produto - EF Core 10";
+}
+
+<div style="margin-bottom: 1.5rem;">
+    <h1>Cadastrar Novo Produto</h1>
+    <p class="subtitle">Os dados serão validados e persistidos na base SQLite via AppDbContext do EF Core.</p>
+</div>
+
+<div class="card" style="max-width: 650px;">
+    <form asp-action="Criar" method="post">
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <div class="form-group">
+            <label asp-for="Nome" class="form-label">Nome do Produto</label>
+            <input asp-for="Nome" class="form-control" placeholder="Ex: Placa Mãe B650" />
+            <span asp-validation-for="Nome" class="field-validation-error"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="CategoriaId" class="form-label">Categoria</label>
+            <select asp-for="CategoriaId" asp-items="ViewBag.Categorias" class="form-control">
+                <option value="">Selecione uma categoria...</option>
+            </select>
+            <span asp-validation-for="CategoriaId" class="field-validation-error"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Preco" class="form-label">Preço Unitário (R$)</label>
+            <input asp-for="Preco" class="form-control" type="number" step="0.01" />
+            <span asp-validation-for="Preco" class="field-validation-error"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Estoque" class="form-label">Quantidade em Estoque</label>
+            <input asp-for="Estoque" class="form-control" type="number" />
+            <span asp-validation-for="Estoque" class="field-validation-error"></span>
+        </div>
+
+        <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem;">
+            <input asp-for="Ativo" type="checkbox" id="checkAtivo" style="width: 1.2rem; height: 1.2rem;" />
+            <label for="checkAtivo" style="margin: 0; cursor: pointer; font-weight: 500;">Produto Ativo no Catálogo</label>
+        </div>
+
+        <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem;">
+            <button type="submit" class="btn btn-primary">Salvar no Banco</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
