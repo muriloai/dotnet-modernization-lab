@@ -1,0 +1,52 @@
+@model System.Collections.Generic.List<RoutingDemo.Models.Produto>
+@{
+    ViewBag.Title = "Lab 05: Roteamento (.NET Framework 4.8.1)";
+}
+
+<span class="badge badge-legacy">Ambiente Legado: .NET Framework 4.8.1</span>
+<h1>Lab 05: Roteamento Duplo no ASP.NET</h1>
+<p class="subtitle">Demonstração de tabelas separadas para MVC (HTML) e Web API (JSON).</p>
+
+<div class="grid">
+    <div class="card" style="grid-column: 1 / -1;">
+        <h2>Produtos Renderizados via MVC (RouteConfig)</h2>
+        <p style="font-size: 0.85rem; color: #6c757d; margin-bottom: 0.75rem;">
+            As URLs abaixo foram geradas via <code>Url.Action("Detalhes", "Produtos", new { id = p.Id })</code>:
+        </p>
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+            <thead>
+                <tr style="background: #f8f9fa; text-align: left;">
+                    <th style="padding: 0.5rem; border: 1px solid #dee2e6;">Id</th>
+                    <th style="padding: 0.5rem; border: 1px solid #dee2e6;">Nome</th>
+                    <th style="padding: 0.5rem; border: 1px solid #dee2e6;">Categoria</th>
+                    <th style="padding: 0.5rem; border: 1px solid #dee2e6;">Preço</th>
+                    <th style="padding: 0.5rem; border: 1px solid #dee2e6;">Ações (MVC vs API)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td style="padding: 0.5rem; border: 1px solid #dee2e6;">@p.Id</td>
+                        <td style="padding: 0.5rem; border: 1px solid #dee2e6;">@p.Nome</td>
+                        <td style="padding: 0.5rem; border: 1px solid #dee2e6;">@p.Categoria</td>
+                        <td style="padding: 0.5rem; border: 1px solid #dee2e6;">R$ @p.Preco.ToString("N2")</td>
+                        <td style="padding: 0.5rem; border: 1px solid #dee2e6;">
+                            <a href="@Url.Action("Detalhes", "Produtos", new { id = p.Id })" style="color: #512bd4; margin-right: 0.5rem;">View MVC</a>
+                            <a href="/api/produtos/@p.Id" target="_blank" style="color: #d9383a;">JSON Web API</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>Por que o Legado era Problemático</h2>
+    <ul style="padding-left: 1.25rem; font-size: 0.95rem; line-height: 1.8;">
+        <li><strong>Duas tabelas desconectadas:</strong> O ASP.NET MVC usa <code>RouteTable.Routes</code> e o Web API usa <code>GlobalConfiguration.Configuration.Routes</code>.</li>
+        <li><strong>Risco de conflito:</strong> Se <code>RouteConfig.RegisterRoutes</code> rodasse antes de <code>WebApiConfig.Register</code>, a chamada para <code>/api/produtos/1</code> cairia no MVC tentando invocar uma action inexistente "1".</li>
+        <li><strong>Controllers incompatíveis:</strong> O <code>ProdutosController</code> herda de <code>System.Web.Mvc.Controller</code> e o <code>ProdutosApiController</code> herda de <code>System.Web.Http.ApiController</code>.</li>
+    </ul>
+</div>

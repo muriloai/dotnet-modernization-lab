@@ -1,0 +1,22 @@
+@model RoutingDemo.Models.Produto
+@{
+    ViewBag.Title = "Detalhe do Produto - Legado";
+}
+
+<span class="badge badge-legacy">Ambiente Legado: .NET Framework 4.8.1</span>
+<h1>Detalhe do Produto via MVC</h1>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>@Model.Nome</h2>
+    <ul class="feature-list">
+        <li><span>Id:</span> <strong class="tag">@Model.Id</strong></li>
+        <li><span>Categoria:</span> <strong class="tag">@Model.Categoria</strong></li>
+        <li><span>Preço:</span> <strong class="tag">R$ @Model.Preco.ToString("N2")</strong></li>
+        <li><span>Em Estoque:</span> <strong class="tag">@(Model.EmEstoque ? "Sim" : "Não")</strong></li>
+    </ul>
+
+    <div style="margin-top: 1.5rem;">
+        <a href="@Url.Action("Index", "Produtos")" style="color: #512bd4; margin-right: 1rem;">Voltar para Lista</a>
+        <a href="/api/produtos/@Model.Id" target="_blank" style="color: #d9383a;">Ver JSON correspondente via Web API</a>
+    </div>
+</div>
