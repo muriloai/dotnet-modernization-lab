@@ -1,0 +1,73 @@
+@page
+@model ViewsAndRazorDemo.Pages.ProdutosRazorPage.IndexModel
+@{
+    ViewData["Title"] = "Demonstração com Razor Pages";
+}
+
+<div style="margin-bottom: 1.5rem;">
+    <h1>Catálogo com Razor Pages</h1>
+    <p class="subtitle">Este fluxo dispensa a criação de controllers separados, unindo tela e handlers de ação (PageModel) no mesmo local.</p>
+</div>
+
+<div class="grid" style="grid-template-columns: 1fr 1.4fr; align-items: start;">
+    <!-- Formulário direto via Page Handler OnPost -->
+    <div class="card">
+        <h3>Cadastrar via Handler OnPost</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Os dados são ligados diretamente à propriedade [BindProperty] do PageModel.</p>
+
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+            <div class="form-group">
+                <label asp-for="NovoProduto.Nome" class="form-label"></label>
+                <input asp-for="NovoProduto.Nome" class="form-control" />
+                <span asp-validation-for="NovoProduto.Nome" class="field-validation-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="NovoProduto.Categoria" class="form-label"></label>
+                <input asp-for="NovoProduto.Categoria" class="form-control" />
+                <span asp-validation-for="NovoProduto.Categoria" class="field-validation-error"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="NovoProduto.Preco" class="form-label"></label>
+                <input asp-for="NovoProduto.Preco" class="form-control" type="number" step="0.01" />
+                <span asp-validation-for="NovoProduto.Preco" class="field-validation-error"></span>
+            </div>
+
+            <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem;">
+                <input asp-for="NovoProduto.EmEstoque" type="checkbox" id="rpEstoque" style="width: 1.1rem; height: 1.1rem;" />
+                <label for="rpEstoque" style="margin: 0; cursor: pointer; font-size: 0.9rem;">Disponível em estoque</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">Salvar via Razor Page</button>
+        </form>
+    </div>
+
+    <!-- Tabela de produtos carregada pelo OnGet -->
+    <div class="card">
+        <h3>Produtos Carregados via OnGet</h3>
+        <table class="table" style="margin-top: 1rem;">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Categoria</th>
+                    <th>Preço</th>
+                    <th>Estoque</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Produtos)
+                {
+                    <tr>
+                        <td><strong>@item.Nome</strong></td>
+                        <td><span class="badge" style="margin-bottom: 0;">@item.Categoria</span></td>
+                        <td>R$ @item.Preco.ToString("N2")</td>
+                        <td>@(item.EmEstoque ? "Sim" : "Não")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

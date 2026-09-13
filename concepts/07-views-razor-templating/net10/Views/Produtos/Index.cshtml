@@ -1,0 +1,80 @@
+@model IReadOnlyList<ViewsAndRazorDemo.Models.ProdutoViewModel>
+@inject ViewsAndRazorDemo.Services.ICatalogoService CatalogoService
+@{
+    ViewData["Title"] = "Produtos - MVC com Tag Helpers";
+}
+
+<div style="margin-bottom: 1.5rem;">
+    <h1>Catálogo de Produtos (MVC + Tag Helpers)</h1>
+    <p class="subtitle">Esta tela utiliza Tag Helpers nativas, invoca um View Component isolado e consome serviços via @@inject.</p>
+</div>
+
+<!-- Invocação do View Component moderno via Tag Helper sem acionar controllers -->
+<vc:resumo-catalogo />
+
+<!-- Exemplo prático de injeção direta de dependência na View usando inject -->
+<div class="note-box" style="margin-bottom: 2rem;">
+    <strong>Mensagem obtida via injeção de dependência direta no Razor (diretiva inject):</strong>
+    <p style="margin-top: 0.25rem; font-style: italic;">"@CatalogoService.ObterMensagemDestaque()"</p>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h2 style="margin: 0; font-size: 1.3rem;">Listagem de Produtos</h2>
+        <a asp-action="Criar" class="btn btn-primary">+ Adicionar Produto</a>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Nome</th>
+                <th>Categoria</th>
+                <th>Preço</th>
+                <th>Situação</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var produto in Model)
+            {
+                <tr>
+                    <td>@produto.Id</td>
+                    <td><strong>@produto.Nome</strong></td>
+                    <td><span class="badge" style="margin-bottom: 0;">@produto.Categoria</span></td>
+                    <td>R$ @produto.Preco.ToString("N2")</td>
+                    <td>
+                        @if (produto.EmEstoque)
+                        {
+                            <span style="color: var(--success); font-weight: 600;">Disponível</span>
+                        }
+                        else
+                        {
+                            <span style="color: var(--text-muted);">Esgotado</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <h3>1. Tag Helpers vs HTML Helpers</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem;">
+            No .NET 10, os elementos são tags HTML reais (como <code>&lt;input asp-for="Nome" /&gt;</code>). Não há necessidade de usar métodos como <code>Html.TextBoxFor</code> passando objetos anônimos como parâmetros para estilização.
+        </p>
+    </div>
+    <div class="card">
+        <h3>2. View Component vs Child Action</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem;">
+            O resumo exibido acima foi renderizado com <code>&lt;vc:resumo-catalogo /&gt;</code>. Ele não passa pelo pipeline do controller, é assíncrono e recebe suas dependências no construtor.
+        </p>
+    </div>
+    <div class="card">
+        <h3>3. Compilação em Tempo de Build</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem;">
+            Esta view foi compilada diretamente no assembly durante o <code>dotnet build</code>. Qualquer erro de sintaxe Razor é detectado pelo compilador antes da aplicação subir no servidor.
+        </p>
+    </div>
+</div>

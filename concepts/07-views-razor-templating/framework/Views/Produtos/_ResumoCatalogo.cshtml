@@ -1,0 +1,30 @@
+@model ViewsAndRazorDemo.Models.ResumoCatalogoViewModel
+
+<div class="card card-accent-legacy" style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="font-size: 1.15rem; color: var(--dark); margin: 0;">Componente de Resumo do Catálogo</h3>
+        <span class="tag" style="background: #ffe3e3; color: #c92a2a;">Child Action Síncrona ([ChildActionOnly])</span>
+    </div>
+
+    <div class="grid" style="margin-bottom: 0;">
+        <div class="stat-box">
+            <span class="stat-number" style="color: var(--legacy-red);">@Model.TotalProdutos</span>
+            <span class="stat-label">Total de Produtos</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-number" style="color: var(--legacy-red);">@Model.ItensEmEstoque</span>
+            <span class="stat-label">Itens em Estoque</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-number" style="color: var(--legacy-red);">@Model.TotalCategoriasDistintas</span>
+            <span class="stat-label">Categorias</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-number" style="color: var(--legacy-red);">R$ @Model.ValorTotalEstoque.ToString("N2")</span>
+            <span class="stat-label">Valor em Estoque</span>
+        </div>
+    </div>
+    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.75rem; text-align: right;">
+        Renderizado via @@Html.Action("ResumoCatalogo", "Produtos") em: @Model.CalculadoEm.ToString("HH:mm:ss")
+    </div>
+</div>

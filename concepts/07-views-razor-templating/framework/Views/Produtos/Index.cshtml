@@ -1,0 +1,80 @@
+@model System.Collections.Generic.IReadOnlyList<ViewsAndRazorDemo.Models.ProdutoViewModel>
+@{
+    ViewBag.Title = "Produtos - MVC 5 Clássico";
+}
+
+<div style="margin-bottom: 1.5rem;">
+    <h1>Catálogo de Produtos (ASP.NET MVC 5)</h1>
+    <p class="subtitle">Esta tela utiliza HTML Helpers clássicos e aciona uma Child Action no controller via Html.Action().</p>
+</div>
+
+<!-- Renderização do componente reutilizável via Child Action clássica -->
+@Html.Action("ResumoCatalogo", "Produtos")
+
+<div class="note-box" style="margin-bottom: 2rem; border-left-color: var(--legacy-red);">
+    <strong>Limitação do modelo legado:</strong>
+    <p style="margin-top: 0.25rem; font-style: italic;">
+        No MVC 5, a injeção declarativa direta com @@inject na View não existia. Obter serviços diretamente na tela exigia usar DependencyResolver.Current ou instanciar objetos no Controller.
+    </p>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h2 style="margin: 0; font-size: 1.3rem;">Listagem de Produtos</h2>
+        <a href="@Url.Action("Criar", "Produtos")" class="btn btn-primary" style="background-color: var(--legacy-red);">+ Adicionar Produto</a>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Nome</th>
+                <th>Categoria</th>
+                <th>Preço</th>
+                <th>Situação</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var produto in Model)
+            {
+                <tr>
+                    <td>@produto.Id</td>
+                    <td><strong>@produto.Nome</strong></td>
+                    <td><span class="badge badge-legacy" style="margin-bottom: 0;">@produto.Categoria</span></td>
+                    <td>R$ @produto.Preco.ToString("N2")</td>
+                    <td>
+                        @if (produto.EmEstoque)
+                        {
+                            <span style="color: var(--success); font-weight: 600;">Disponível</span>
+                        }
+                        else
+                        {
+                            <span style="color: var(--text-muted);">Esgotado</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <h3>1. HTML Helpers e Sintaxe Intrusiva</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem;">
+            No MVC 5, a geração de elementos HTML depende de métodos como <code>Html.TextBoxFor</code> e <code>Html.LabelFor</code>, exigindo objetos anônimos em C# para passar classes CSS e atributos HTML.
+        </p>
+    </div>
+    <div class="card">
+        <h3>2. Custo das Child Actions</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem;">
+            O resumo acima foi renderizado através de <code>Html.Action</code> chamando um método com atributo <code>[ChildActionOnly]</code> no controller. Isso instanciava todo o pipeline de controller apenas para gerar um pedaço de tela.
+        </p>
+    </div>
+    <div class="card">
+        <h3>3. Compilação em Tempo de Execução</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem;">
+            No .NET Framework, as views Razor eram compiladas dinamicamente pelo IIS quando o primeiro usuário acessava a rota, o que gerava lentidão perceptível no primeiro carregamento.
+        </p>
+    </div>
+</div>

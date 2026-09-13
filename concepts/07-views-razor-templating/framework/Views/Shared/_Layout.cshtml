@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - .NET Modernization Lab</title>
+    <link href="~/Content/Site.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+    <div class="container">
+        <header style="margin-bottom: 2rem; border-bottom: 2px solid var(--border); padding-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <span class="badge badge-legacy">.NET Framework 4.8.1 - Legado</span>
+                    <h2 style="font-size: 1.4rem; color: var(--dark); margin-top: 0.25rem;">Lab 07: Views, Razor e Templating</h2>
+                </div>
+                <nav style="display: flex; gap: 0.75rem;">
+                    <a href="@Url.Action("Index", "Produtos")" class="btn btn-secondary">Listagem (MVC 5)</a>
+                    <a href="@Url.Action("Criar", "Produtos")" class="btn btn-primary">+ Novo Produto</a>
+                </nav>
+            </div>
+        </header>
+
+        <main role="main">
+            @RenderBody()
+        </main>
+    </div>
+</body>
+</html>

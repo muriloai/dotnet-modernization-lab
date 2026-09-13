@@ -1,0 +1,30 @@
+@model ViewsAndRazorDemo.Models.ResumoCatalogoViewModel
+
+<div class="card card-accent" style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="font-size: 1.15rem; color: var(--dark); margin: 0;">Componente de Resumo do Catálogo</h3>
+        <span class="tag">ViewComponent Assíncrono</span>
+    </div>
+
+    <div class="grid" style="margin-bottom: 0;">
+        <div class="stat-box">
+            <span class="stat-number">@Model.TotalProdutos</span>
+            <span class="stat-label">Total de Produtos</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-number">@Model.ItensEmEstoque</span>
+            <span class="stat-label">Itens em Estoque</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-number">@Model.TotalCategoriasDistintas</span>
+            <span class="stat-label">Categorias</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-number">R$ @Model.ValorTotalEstoque.ToString("N2")</span>
+            <span class="stat-label">Valor em Estoque</span>
+        </div>
+    </div>
+    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.75rem; text-align: right;">
+        Calculado de forma assíncrona e desacoplada em: @Model.CalculadoEm.ToString("HH:mm:ss")
+    </div>
+</div>

@@ -1,0 +1,46 @@
+@model ViewsAndRazorDemo.Models.ProdutoViewModel
+@{
+    ViewData["Title"] = "Cadastrar Produto - Tag Helpers";
+}
+
+<div style="margin-bottom: 1.5rem;">
+    <h1>Cadastrar Novo Produto</h1>
+    <p class="subtitle">Exemplo de formulário construído com Tag Helpers nativas do ASP.NET Core.</p>
+</div>
+
+<div class="card" style="max-width: 650px;">
+    <!-- Formulário construído com Tag Helpers: nada de @using (Html.BeginForm()) -->
+    <form asp-action="Criar" method="post">
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+
+        <div class="form-group">
+            <label asp-for="Nome" class="form-label"></label>
+            <input asp-for="Nome" class="form-control" placeholder="Ex: Teclado Mecânico" />
+            <span asp-validation-for="Nome" class="field-validation-error"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Categoria" class="form-label"></label>
+            <input asp-for="Categoria" class="form-control" placeholder="Ex: Periféricos" />
+            <span asp-validation-for="Categoria" class="field-validation-error"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Preco" class="form-label"></label>
+            <input asp-for="Preco" class="form-control" type="number" step="0.01" />
+            <span asp-validation-for="Preco" class="field-validation-error"></span>
+        </div>
+
+        <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem;">
+            <input asp-for="EmEstoque" type="checkbox" id="emEstoqueCheck" style="width: 1.2rem; height: 1.2rem;" />
+            <label for="emEstoqueCheck" style="margin: 0; cursor: pointer; font-weight: 500;">Disponível imediatamente em estoque</label>
+        </div>
+
+        <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem;">
+            <button type="submit" class="btn btn-primary">Salvar Produto</button>
+            <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>

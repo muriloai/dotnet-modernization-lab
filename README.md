@@ -39,6 +39,7 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | [04](concepts/04-middleware-vs-modules/README.md) | Middlewares vs Módulos HTTP         | IHttpModule, IHttpHandler e eventos do IIS                    | Pipeline linear de middlewares com RequestDelegate                      | Concluído    |
 | [05](concepts/05-routing/README.md)           | Roteamento                           | Tabelas separadas (MVC vs Web API) e conflitos de convenção   | Endpoint Routing unificado, MapGroup e restrições tipadas                | Concluído    |
 | [06](concepts/06-controllers-actions/README.md) | Controllers e Actions               | Divisão entre Controller (MVC) e ApiController (Web API)      | ControllerBase unificado, [ApiController] e TypedResults                 | Concluído    |
+| [07](concepts/07-views-razor-templating/README.md) | Views, Razor e Templating           | Razor 3, HTML Helpers (@Html.*), Child Actions e MVC puro    | Tag Helpers (<input asp-*>), View Components, Razor Pages | Concluído    |
 
 ---
 
