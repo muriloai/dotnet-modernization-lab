@@ -57,6 +57,12 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | [12](concepts/12-authorization-policies/README.md) | Autorização e Políticas              | [Authorize(Roles = "Admin")], papéis estáticos e checagens manuais no código | AddAuthorization, Policy-based Authorization, IAuthorizationRequirement e handlers | Concluído    |
 | [13](concepts/13-security-best-practices/README.md) | Práticas de Segurança                | AntiForgery manual, cabeçalhos em Web.config e risco do BinaryFormatter | UseAntiforgery, AddCors tipado, Security Headers em middleware e System.Text.Json | Concluído    |
 
+### HTTP, APIs e Comunicação
+
+| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        | Status       |
+| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------ |
+| [14](concepts/14-rest-apis/README.md)         | Construção de APIs REST              | ApiController (Web API 2), IHttpActionResult e rotas manuais  | [ApiController], ControllerBase, IResult/TypedResults, OpenAPI nativo e Minimal APIs | Concluído    |
+
 ---
 
 ## Pré-requisitos para Execução

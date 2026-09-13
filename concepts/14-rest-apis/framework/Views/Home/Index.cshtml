@@ -1,0 +1,201 @@
+@{
+    ViewBag.Title = "Painel de Testes Web API 2";
+}
+
+<div style="margin-bottom: 2rem;">
+    <h2>Operações com ASP.NET Web API 2</h2>
+    <p class="subtitle">
+        Demonstração de requisições HTTP RESTful contra o controller legado <code>ProdutosApiController</code>
+        derivado de <code>System.Web.Http.ApiController</code> com retorno <code>IHttpActionResult</code>.
+    </p>
+</div>
+
+<div class="grid-2">
+    <!-- Coluna de Ações -->
+    <div class="card">
+        <h3>Operações RESTful Disponíveis</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Selecione uma operação para testar a Web API 2:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <button class="btn btn-primary" onclick="executarChamada('GET', '/api/produtos')">
+                GET /api/produtos
+                <small>Lista os produtos cadastrados no repositório estático.</small>
+            </button>
+
+            <button class="btn btn-secondary" onclick="executarChamada('GET', '/api/produtos?categoria=Acessórios')">
+                GET /api/produtos?categoria=Acessórios
+                <small>Filtro por categoria via query string.</small>
+            </button>
+
+            <button class="btn btn-secondary" onclick="executarChamada('GET', '/api/produtos/1')">
+                GET /api/produtos/1
+                <small>Busca por identificador existente (200 OK).</small>
+            </button>
+
+            <button class="btn btn-warning" onclick="executarChamada('GET', '/api/produtos/999')">
+                GET /api/produtos/999
+                <small>Busca inexistente: NotFound() sem corpo RFC 7807.</small>
+            </button>
+
+            <button class="btn btn-primary" onclick="criarProdutoValido()">
+                POST /api/produtos (Sucesso)
+                <small>Retorna 201 Created e cabeçalho Location manual.</small>
+            </button>
+
+            <button class="btn btn-danger" onclick="criarProdutoInvalido()">
+                POST /api/produtos (Erro de Validação)
+                <small>Retorna 400 Bad Request com a estrutura legada HttpError.</small>
+            </button>
+
+            <button class="btn btn-warning" onclick="criarProdutoSkuDuplicado()">
+                POST /api/produtos (Conflito SKU)
+                <small>Retorna 409 Conflict implementado com tipo anônimo ad-hoc.</small>
+            </button>
+
+            <button class="btn btn-secondary" onclick="atualizarPreco(1)">
+                PATCH /api/produtos/1/preco
+                <small>Atualização parcial de preço.</small>
+            </button>
+
+            <button class="btn btn-danger" onclick="executarChamada('DELETE', '/api/produtos/5')">
+                DELETE /api/produtos/5
+                <small>Exclusão retornando 204 No Content via StatusCode.</small>
+            </button>
+        </div>
+    </div>
+
+    <!-- Coluna de Explicação Técnica -->
+    <div class="card">
+        <h3>Características do ASP.NET Web API 2</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Limitações arquiteturais comuns observadas no ecossistema legado:
+        </p>
+
+        <ul style="font-size: 0.88rem; line-height: 1.7; padding-left: 1.25rem; color: var(--text); margin-bottom: 1.25rem;">
+            <li><strong>Validação Manual:</strong> Sem o atributo <code>[ApiController]</code>, a verificação de <code>ModelState.IsValid</code> precisa ser digitada manualmente em cada action.</li>
+            <li><strong>Formato de Erro Proprietário:</strong> O Web API 2 utiliza a classe interna <code>HttpError</code> com chaves como <code>ModelState</code> ou <code>Message</code>, em vez do padrão RFC 7807 <code>ProblemDetails</code>.</li>
+            <li><strong>Injeção de Dependência Ausente:</strong> Exigia a configuração de um <code>IDependencyResolver</code> customizado conectado a containers de terceiros (Unity, Autofac).</li>
+            <li><strong>Documentação Complexa:</strong> Não há OpenAPI embutido. Era necessário instalar o Swashbuckle 5.x legado e manter arquivos XML de comentários.</li>
+        </ul>
+
+        <div style="background: #f8f9fa; padding: 1rem; border-radius: 6px; border: 1px solid var(--border); font-size: 0.85rem;">
+            <strong>Contraste com o .NET 10:</strong> No .NET 10, o <code>[ApiController]</code> automatiza a validação com ProblemDetails, o suporte a OpenAPI v3 é nativo com <code>AddOpenApi()</code> e a injeção de dependência é parte do núcleo do framework.
+        </div>
+    </div>
+</div>
+
+<!-- Console de Resultados -->
+<div class="result-area">
+    <div class="result-header">
+        <div>
+            <strong>Chamada:</strong> <span id="reqInfo">-</span>
+        </div>
+        <div>
+            <span id="statusInfo" style="font-weight: bold;">-</span>
+        </div>
+    </div>
+
+    <div style="font-size: 0.82rem; color: #a0a0b0; margin-bottom: 0.5rem;">
+        <div><strong>Cabeçalhos Retornados:</strong></div>
+        <div id="headersInfo" style="font-family: monospace;">-</div>
+    </div>
+
+    <div>
+        <strong style="font-size: 0.82rem; color: #a0a0b0;">Corpo da Resposta (JSON):</strong>
+        <pre><code id="payloadInfo">// Selecione uma operação acima para visualizar o retorno da Web API 2.</code></pre>
+    </div>
+</div>
+
+<script>
+    async function executarChamada(metodo, url, body) {
+        var reqEl = document.getElementById('reqInfo');
+        var statusEl = document.getElementById('statusInfo');
+        var headersEl = document.getElementById('headersInfo');
+        var payloadEl = document.getElementById('payloadInfo');
+
+        reqEl.textContent = metodo + ' ' + url;
+        statusEl.textContent = 'Enviando...';
+        headersEl.textContent = 'Aguardando cabeçalhos...';
+        payloadEl.textContent = 'Processando...';
+
+        var opcoes = {
+            method: metodo,
+            headers: { 'Accept': 'application/json' }
+        };
+
+        if (body) {
+            opcoes.headers['Content-Type'] = 'application/json';
+            opcoes.body = JSON.stringify(body);
+        }
+
+        try {
+            var res = await fetch(url, opcoes);
+            statusEl.textContent = res.status + ' ' + res.statusText;
+
+            var headersList = [];
+            res.headers.forEach(function (val, key) {
+                if (['content-type', 'location', 'date'].indexOf(key.toLowerCase()) !== -1) {
+                    headersList.push(key + ': ' + val);
+                }
+            });
+            headersEl.textContent = headersList.length > 0 ? headersList.join(' | ') : 'Nenhum cabeçalho especial retornado.';
+
+            if (res.status === 204) {
+                payloadEl.textContent = '// 204 No Content: Resposta sem corpo.';
+                return;
+            }
+
+            var texto = await res.text();
+            try {
+                var json = JSON.parse(texto);
+                payloadEl.textContent = JSON.stringify(json, null, 2);
+            } catch (e) {
+                payloadEl.textContent = texto || '// Resposta vazia';
+            }
+        } catch (err) {
+            statusEl.textContent = 'Erro';
+            headersEl.textContent = '-';
+            payloadEl.textContent = err.toString();
+        }
+    }
+
+    function criarProdutoValido() {
+        var sufixo = Math.floor(1000 + Math.random() * 9000);
+        executarChamada('POST', '/api/produtos', {
+            Nome: 'Tablet Profissional ' + sufixo,
+            Sku: 'TAB-' + sufixo,
+            Preco: 1999.90,
+            Estoque: 12,
+            Categoria: 'Informática'
+        });
+    }
+
+    function criarProdutoInvalido() {
+        executarChamada('POST', '/api/produtos', {
+            Nome: 'A',
+            Sku: 'invalido',
+            Preco: -10.00,
+            Estoque: -2,
+            Categoria: ''
+        });
+    }
+
+    function criarProdutoSkuDuplicado() {
+        executarChamada('POST', '/api/produtos', {
+            Nome: 'Notebook Clonado Legado',
+            Sku: 'NOT-1001',
+            Preco: 2500.00,
+            Estoque: 5,
+            Categoria: 'Informática'
+        });
+    }
+
+    function atualizarPreco(id) {
+        var novoPreco = parseFloat((Math.random() * 4000 + 100).toFixed(2));
+        executarChamada('PATCH', '/api/produtos/' + id + '/preco', {
+            NovoPreco: novoPreco
+        });
+    }
+</script>

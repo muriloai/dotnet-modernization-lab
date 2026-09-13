@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lab 14: Construção de APIs REST (.NET 10)</title>
+    <link rel="stylesheet" href="css/site.css" />
+</head>
+<body>
+    <div class="container">
+        <header style="margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+            <span class="badge badge-modern">ASP.NET Core (.NET 10 LTS) - Porta 6400</span>
+            <h1>Lab 14: Construção de APIs REST</h1>
+            <p class="subtitle">
+                Demonstração prática de controllers RESTful modernos ([ApiController]), Minimal APIs ultraleves,
+                especificação OpenAPI nativa e padronização RFC 7807 (ProblemDetails).
+            </p>
+        </header>
+
+        <div class="grid-2">
+            <!-- Coluna 1: Controllers Tradicionais -->
+            <div class="card">
+                <h2>1. Controllers RESTful ([ApiController])</h2>
+                <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Testes das ações implementadas em <code>ProdutosController</code> herdando de <code>ControllerBase</code>:
+                </p>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="executarRequisicao('GET', '/api/produtos')">
+                        GET /api/produtos
+                        <small>Lista todos os produtos ativos e inativos (200 OK).</small>
+                    </button>
+
+                    <button class="btn btn-secondary" onclick="executarRequisicao('GET', '/api/produtos?categoria=Acessórios')">
+                        GET /api/produtos?categoria=Acessórios
+                        <small>Filtro por categoria via query string (200 OK).</small>
+                    </button>
+
+                    <button class="btn btn-secondary" onclick="executarRequisicao('GET', '/api/produtos/1')">
+                        GET /api/produtos/1
+                        <small>Busca por identificador existente (200 OK).</small>
+                    </button>
+
+                    <button class="btn btn-warning" onclick="executarRequisicao('GET', '/api/produtos/999')">
+                        GET /api/produtos/999 (Inexistente)
+                        <small>Retorna 404 com RFC 7807 ProblemDetails.</small>
+                    </button>
+
+                    <button class="btn btn-success" onclick="criarProdutoValido()">
+                        POST /api/produtos (Sucesso)
+                        <small>Retorna 201 Created com cabeçalho Location apontando para o recurso.</small>
+                    </button>
+
+                    <button class="btn btn-danger" onclick="criarProdutoInvalido()">
+                        POST /api/produtos (Erro de Validação)
+                        <small>Envia payload inválido e observa o retorno automático 400 ValidationProblemDetails.</small>
+                    </button>
+
+                    <button class="btn btn-warning" onclick="criarProdutoSkuDuplicado()">
+                        POST /api/produtos (Conflito SKU)
+                        <small>Tenta cadastrar SKU duplicado (409 Conflict ProblemDetails).</small>
+                    </button>
+
+                    <button class="btn btn-secondary" onclick="atualizarPrecoPatch(1)">
+                        PATCH /api/produtos/1/preco
+                        <small>Atualização parcial de preço (200 OK).</small>
+                    </button>
+
+                    <button class="btn btn-danger" onclick="executarRequisicao('DELETE', '/api/produtos/5')">
+                        DELETE /api/produtos/5
+                        <small>Exclusão semântica retornando 204 No Content.</small>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Coluna 2: Minimal APIs e OpenAPI Nativo -->
+            <div class="card">
+                <h2>2. Minimal APIs e OpenAPI Nativo</h2>
+                <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Alternativas funcionais modernas introduzidas no .NET e OpenAPI nativo sem Swashbuckle:
+                </p>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="executarRequisicao('GET', '/api/v2/produtos')">
+                        GET /api/v2/produtos (Minimal API)
+                        <small>Execução com TypedResults.Ok sem overhead de reflexão.</small>
+                    </button>
+
+                    <button class="btn btn-secondary" onclick="executarRequisicao('GET', '/api/v2/produtos/2')">
+                        GET /api/v2/produtos/2 (Minimal API)
+                        <small>Busca direta com RouteGroupBuilder (200 OK).</small>
+                    </button>
+
+                    <button class="btn btn-success" onclick="executarRequisicao('GET', '/openapi/v1.json')">
+                        GET /openapi/v1.json (OpenAPI Nativo)
+                        <small>Especificação OpenAPI v3 gerada nativamente no .NET 10.</small>
+                    </button>
+                </div>
+
+                <div style="margin-top: 1.5rem; background: #f8f9fa; padding: 1rem; border-radius: 6px; border: 1px solid var(--border); font-size: 0.84rem; line-height: 1.6;">
+                    <strong style="color: var(--dark);">Destaques de Modernização:</strong>
+                    <ul style="padding-left: 1.25rem; margin-top: 0.35rem; color: var(--text);">
+                        <li><strong>RFC 7807 Universal:</strong> Falhas de validação, conflitos e recursos não encontrados compartilham o mesmo contrato padronizado internacionalmente.</li>
+                        <li><strong>TypedResults:</strong> As Minimal APIs fornecem tipagem em tempo de compilação sem precisar instanciar instâncias complexas de controllers.</li>
+                        <li><strong>Zero Swashbuckle:</strong> O .NET 10 inclui gerador OpenAPI integrado com suporte a AOT e contratos estritos.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Painel de Resultados HTTP -->
+        <div class="result-area">
+            <div class="result-header">
+                <div>
+                    <strong>Chamada:</strong> <span id="lblMetodoUrl">-</span>
+                </div>
+                <div>
+                    <span id="lblStatusBadge" class="status-badge" style="display: none;">-</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 0.5rem; font-size: 0.82rem; color: #a0a0b0;">
+                <div><strong>Cabeçalhos de Resposta:</strong></div>
+                <div id="lblHeaders" style="margin-top: 0.2rem; font-family: monospace;">-</div>
+            </div>
+
+            <div>
+                <strong style="font-size: 0.82rem; color: #a0a0b0;">Corpo da Resposta (Payload JSON):</strong>
+                <pre><code id="lblBody">// Clique em uma das operações acima para disparar requisições HTTP reais.</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function executarRequisicao(metodo, url, body) {
+            const lblMetodoUrl = document.getElementById('lblMetodoUrl');
+            const lblStatusBadge = document.getElementById('lblStatusBadge');
+            const lblHeaders = document.getElementById('lblHeaders');
+            const lblBody = document.getElementById('lblBody');
+
+            lblMetodoUrl.textContent = metodo + ' ' + url;
+            lblStatusBadge.style.display = 'none';
+            lblHeaders.textContent = 'Aguardando cabeçalhos...';
+            lblBody.textContent = 'Enviando requisição...';
+
+            const opcoes = {
+                method: metodo,
+                headers: { 'Accept': 'application/json' }
+            };
+
+            if (body) {
+                opcoes.headers['Content-Type'] = 'application/json';
+                opcoes.body = JSON.stringify(body);
+            }
+
+            try {
+                const inicio = performance.now();
+                const res = await fetch(url, opcoes);
+                const duracao = Math.round(performance.now() - inicio);
+
+                lblStatusBadge.style.display = 'inline-block';
+                lblStatusBadge.textContent = res.status + ' ' + res.statusText + ' (' + duracao + 'ms)';
+                lblStatusBadge.className = 'status-badge ' + (res.ok ? 'status-200' : 'status-400');
+
+                // Extrair headers relevantes
+                const headersList = [];
+                res.headers.forEach((val, key) => {
+                    if (['content-type', 'location', 'date'].includes(key.toLowerCase())) {
+                        headersList.push(key + ': ' + val);
+                    }
+                });
+                lblHeaders.textContent = headersList.length > 0 ? headersList.join(' | ') : 'Nenhum cabeçalho especial retornado.';
+
+                if (res.status === 204) {
+                    lblBody.textContent = '// 204 No Content: Recurso excluído ou atualizado com sucesso. Resposta sem corpo.';
+                    return;
+                }
+
+                const texto = await res.text();
+                try {
+                    const json = JSON.parse(texto);
+                    lblBody.textContent = JSON.stringify(json, null, 2);
+                } catch {
+                    lblBody.textContent = texto || '// Resposta vazia';
+                }
+            } catch (err) {
+                lblStatusBadge.style.display = 'inline-block';
+                lblStatusBadge.textContent = 'Erro de Rede';
+                lblStatusBadge.className = 'status-badge status-400';
+                lblHeaders.textContent = '-';
+                lblBody.textContent = err.toString();
+            }
+        }
+
+        function criarProdutoValido() {
+            const sufixo = Math.floor(1000 + Math.random() * 9000);
+            executarRequisicao('POST', '/api/produtos', {
+                Nome: 'Smartwatch Esportivo Pro ' + sufixo,
+                Sku: 'REL-' + sufixo,
+                Preco: 899.90,
+                Estoque: 25,
+                Categoria: 'Eletrônicos'
+            });
+        }
+
+        function criarProdutoInvalido() {
+            executarRequisicao('POST', '/api/produtos', {
+                Nome: 'A', // Inválido: mínimo 3 caracteres
+                Sku: 'invalido', // Inválido: regex ABC-1234
+                Preco: -50.00, // Inválido: deve ser > 0
+                Estoque: -5, // Inválido: não pode ser negativo
+                Categoria: '' // Inválido: obrigatório
+            });
+        }
+
+        function criarProdutoSkuDuplicado() {
+            executarRequisicao('POST', '/api/produtos', {
+                Nome: 'Notebook Clonado',
+                Sku: 'NOT-1001', // SKU que já existe nos dados iniciais
+                Preco: 3500.00,
+                Estoque: 10,
+                Categoria: 'Informática'
+            });
+        }
+
+        function atualizarPrecoPatch(id) {
+            const novoPreco = parseFloat((Math.random() * 5000 + 100).toFixed(2));
+            executarRequisicao('PATCH', '/api/produtos/' + id + '/preco', {
+                NovoPreco: novoPreco
+            });
+        }
+    </script>
+</body>
+</html>
