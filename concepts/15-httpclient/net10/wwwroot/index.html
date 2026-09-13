@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lab 15: HttpClient e Requisições Externas (.NET 10)</title>
+    <link rel="stylesheet" href="css/site.css" />
+</head>
+<body>
+    <div class="container">
+        <header style="margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+            <span class="badge badge-modern">ASP.NET Core (.NET 10 LTS) - Porta 6500</span>
+            <h1>Lab 15: HttpClient e Requisições Externas</h1>
+            <p class="subtitle">
+                Demonstração de IHttpClientFactory, clientes nomeados, Typed Clients e resiliência com Polly,
+                eliminando definitivamente os problemas de Socket Exhaustion e DNS Stale do ecossistema legado.
+            </p>
+        </header>
+
+        <div class="grid-2">
+            <!-- Coluna 1: Padrões de Clientes Modernos -->
+            <div class="card">
+                <h2>1. Padrões de Consumo com IHttpClientFactory</h2>
+                <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    O container gerencia os manipuladores SocketsHttpHandler em pool, reciclando conexões a cada 2 minutos:
+                </p>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="executarChamada('/api/clientes-http/basico/USD')">
+                        1. Basic Client (USD)
+                        <small>CreateClient() sob demanda reaproveitando handlers do pool.</small>
+                    </button>
+
+                    <button class="btn btn-secondary" onclick="executarChamada('/api/clientes-http/nomeado/EUR')">
+                        2. Named Client (EUR)
+                        <small>CreateClient("CotacoesNomeado") com BaseAddress e cabeçalhos prévios.</small>
+                    </button>
+
+                    <button class="btn btn-primary" onclick="executarChamada('/api/clientes-http/tipado/GBP')">
+                        3. Typed Client (GBP)
+                        <small>Injeção direta de ICotacaoService desacoplado com System.Net.Http.Json.</small>
+                    </button>
+
+                    <button class="btn btn-secondary" onclick="executarChamada('/api/clientes-http/tipado/BTC')">
+                        3. Typed Client (Bitcoin - BTC)
+                        <small>Consulta tipada de criptoativo.</small>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Coluna 2: Testes de Resiliência -->
+            <div class="card">
+                <h2>2. Resiliência e Tolerância a Falhas</h2>
+                <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Simule indisponibilidade temporária e observe a recuperação automática com retries:
+                </p>
+
+                <div class="btn-group">
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <button class="btn btn-warning" style="flex: 1;" onclick="configurarFalha(true)">
+                            Ativar 2 Falhas (503)
+                            <small>Força 503 nas 2 primeiras chamadas.</small>
+                        </button>
+                        <button class="btn btn-secondary" style="flex: 1;" onclick="configurarFalha(false)">
+                            Desativar Falhas
+                            <small>Restaura respostas 200 imediatas.</small>
+                        </button>
+                    </div>
+
+                    <button class="btn btn-danger" onclick="executarChamada('/api/clientes-http/tipado/USD')">
+                        Cliente Comum sob Falha (Falha Direta)
+                        <small>Sem pipeline de resiliência: falha imediatamente ao receber 503.</small>
+                    </button>
+
+                    <button class="btn btn-success" onclick="executarChamada('/api/clientes-http/resiliente/USD')">
+                        Cliente Resiliente (Recupera com Retries)
+                        <small>Executa retries automáticos com backoff e obtém sucesso na 3ª tentativa.</small>
+                    </button>
+
+                    <button class="btn btn-secondary" onclick="resetarContador()">
+                        Resetar Contadores de Teste
+                    </button>
+                </div>
+
+                <div style="margin-top: 1rem; background: #f8f9fa; padding: 0.85rem; border-radius: 6px; border: 1px solid var(--border); font-size: 0.82rem; line-height: 1.5;">
+                    <strong>Diferencial Arquitetural:</strong> No legado, retries exigiam loops manuais com <code>Thread.Sleep</code>. No .NET 10, o <code>AddStandardResilienceHandler</code> aplica retries assíncronos não bloqueantes com jitter e circuit breaker.
+                </div>
+            </div>
+        </div>
+
+        <!-- Painel de Resultados -->
+        <div class="result-area">
+            <div class="result-header">
+                <div>
+                    <strong>Operação:</strong> <span id="lblRota">-</span>
+                </div>
+                <div>
+                    <span id="lblBadge" class="status-badge" style="display: none;">-</span>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 2rem; margin-bottom: 0.75rem; font-size: 0.84rem; color: #a0a0b0; flex-wrap: wrap;">
+                <div><strong>Padrão:</strong> <span id="lblModo" style="color: #ffffff;">-</span></div>
+                <div><strong>Latência:</strong> <span id="lblTempo" style="color: #ffffff;">-</span></div>
+                <div><strong>Tentativas:</strong> <span id="lblTentativas" style="color: #ffffff;">-</span></div>
+            </div>
+
+            <div>
+                <strong style="font-size: 0.82rem; color: #a0a0b0;">Resultado da Consulta (JSON):</strong>
+                <pre><code id="lblJson">// Clique em um dos botões acima para executar chamadas HTTP reais.</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function executarChamada(url) {
+            const lblRota = document.getElementById('lblRota');
+            const lblBadge = document.getElementById('lblBadge');
+            const lblModo = document.getElementById('lblModo');
+            const lblTempo = document.getElementById('lblTempo');
+            const lblTentativas = document.getElementById('lblTentativas');
+            const lblJson = document.getElementById('lblJson');
+
+            lblRota.textContent = 'GET ' + url;
+            lblBadge.style.display = 'none';
+            lblModo.textContent = 'Processando...';
+            lblTempo.textContent = '...';
+            lblTentativas.textContent = '...';
+            lblJson.textContent = 'Aguardando resposta da rede...';
+
+            try {
+                const res = await fetch(url);
+                const dados = await res.json();
+
+                lblBadge.style.display = 'inline-block';
+                lblBadge.textContent = dados.statusCode + ' ' + (dados.statusCode === 200 ? 'OK' : 'Falha');
+                lblBadge.className = 'status-badge ' + (dados.statusCode === 200 ? 'status-200' : 'status-503');
+
+                lblModo.textContent = dados.modoCliente;
+                lblTempo.textContent = dados.tempoRespostaMs + ' ms';
+                lblTentativas.textContent = dados.tentativasRealizadas;
+                lblJson.textContent = JSON.stringify(dados, null, 2);
+            } catch (err) {
+                lblBadge.style.display = 'inline-block';
+                lblBadge.textContent = 'Erro';
+                lblBadge.className = 'status-badge status-503';
+                lblJson.textContent = err.toString();
+            }
+        }
+
+        async function configurarFalha(ativar) {
+            const res = await fetch('/api/mock-cotacoes/configurar-falha?ativar=' + ativar + '&falhas=2', { method: 'POST' });
+            const json = await res.json();
+            document.getElementById('lblRota').textContent = 'Configuração de Falhas';
+            document.getElementById('lblJson').textContent = JSON.stringify(json, null, 2);
+        }
+
+        async function resetarContador() {
+            const res = await fetch('/api/mock-cotacoes/resetar-contador', { method: 'POST' });
+            const json = await res.json();
+            document.getElementById('lblRota').textContent = 'Reset de Contadores';
+            document.getElementById('lblJson').textContent = JSON.stringify(json, null, 2);
+        }
+    </script>
+</body>
+</html>

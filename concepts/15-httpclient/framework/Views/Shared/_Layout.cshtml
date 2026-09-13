@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - Lab 15: HttpClient e Requisições Externas (.NET Framework 4.8.1)</title>
+    <link href="~/Content/Site.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+    <div class="container">
+        <header style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <span class="badge badge-legacy">ASP.NET (.NET Framework 4.8.1) - Porta 6501</span>
+                    <h1 style="font-size: 1.6rem; margin-top: 0.25rem;">Lab 15: Requisições HTTP Legadas</h1>
+                </div>
+                <nav style="display: flex; gap: 1rem;">
+                    @Html.ActionLink("Painel de Testes", "Index", "Home", null, new { @class = "nav-link" })
+                </nav>
+            </div>
+        </header>
+
+        @RenderBody()
+
+        <footer style="margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--text-muted); text-align: center;">
+            .NET Modernization Lab - Conceito 15: HttpClient e Requisições Externas (.NET Framework 4.8.1 vs .NET 10)
+        </footer>
+    </div>
+</body>
+</html>

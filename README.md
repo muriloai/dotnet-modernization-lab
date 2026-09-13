@@ -62,6 +62,7 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        | Status       |
 | --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------ |
 | [14](concepts/14-rest-apis/README.md)         | Construção de APIs REST              | ApiController (Web API 2), IHttpActionResult e rotas manuais  | [ApiController], ControllerBase, IResult/TypedResults, OpenAPI nativo e Minimal APIs | Concluído    |
+| [15](concepts/15-httpclient/README.md)        | HttpClient e Requisições Externas    | WebClient, HttpWebRequest, new HttpClient() e socket exhaustion | IHttpClientFactory, Typed Clients, SocketsHttpHandler e resiliência | Concluído    |
 
 ---
 

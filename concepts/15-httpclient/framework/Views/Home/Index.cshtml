@@ -1,0 +1,107 @@
+@{
+    ViewBag.Title = "Painel de Testes HTTP Legado";
+}
+
+<div style="margin-bottom: 2rem;">
+    <h2>Dilemas Históricos de Conexão HTTP no .NET Framework</h2>
+    <p class="subtitle">
+        Demonstração prática dos riscos de <strong>Socket Exhaustion</strong> com <code>using (new HttpClient())</code>,
+        <strong>DNS Stale</strong> com instâncias estáticas e bloqueio síncrono com <code>WebClient</code>.
+    </p>
+</div>
+
+<div class="grid-2">
+    <!-- Coluna de Ações -->
+    <div class="card">
+        <h3>Padrões Legados de Execução</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Selecione uma abordagem clássica para observar o comportamento do cliente HTTP:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <button class="btn btn-danger" onclick="executarChamada('/api/clientes-http/using/USD')">
+                1. using (new HttpClient()) (USD)
+                <small>Anti-padrão que deixa conexões TCP presas no estado TIME_WAIT.</small>
+            </button>
+
+            <button class="btn btn-warning" onclick="executarChamada('/api/clientes-http/static/EUR')">
+                2. static readonly HttpClient (EUR)
+                <small>Evita esgotamento de portas, mas ignora mudanças de IP no DNS.</small>
+            </button>
+
+            <button class="btn btn-secondary" onclick="executarChamada('/api/clientes-http/webclient/GBP')">
+                3. WebClient Síncrono (GBP)
+                <small>API herdada do .NET 2.0 que bloqueia a thread do IIS durante o I/O.</small>
+            </button>
+        </div>
+    </div>
+
+    <!-- Coluna de Explicação Técnica -->
+    <div class="card">
+        <h3>Diagnóstico das Fragilidades Legadas</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Por que o .NET precisou criar o <code>IHttpClientFactory</code>:
+        </p>
+
+        <ul style="font-size: 0.88rem; line-height: 1.7; padding-left: 1.25rem; color: var(--text); margin-bottom: 1.25rem;">
+            <li><strong>Socket Exhaustion:</strong> Criar e descartar um <code>HttpClient</code> por requisição consome todas as portas TCP efêmeras da máquina sob carga, travando a aplicação.</li>
+            <li><strong>DNS Desatualizado (Stale):</strong> Clientes estáticos mantêm a mesma conexão aberta permanentemente, falhando em caso de troca de IP ou failover em nuvem.</li>
+            <li><strong>Ausência de Resiliência:</strong> Sem o Polly integrado ao pipeline, retries precisavam ser codificados em loops imperativos com <code>Thread.Sleep</code>.</li>
+        </ul>
+
+        <div style="background: #f8f9fa; padding: 1rem; border-radius: 6px; border: 1px solid var(--border); font-size: 0.85rem;">
+            <strong>Solução no .NET 10:</strong> O <code>IHttpClientFactory</code> recicla os handlers a cada 2 minutos (renovando DNS) e gerencia um pool inteligente de conexões sem risco de socket exhaustion.
+        </div>
+    </div>
+</div>
+
+<!-- Console de Resultados -->
+<div class="result-area">
+    <div class="result-header">
+        <div>
+            <strong>Chamada:</strong> <span id="reqInfo">-</span>
+        </div>
+        <div>
+            <span id="statusInfo" style="font-weight: bold;">-</span>
+        </div>
+    </div>
+
+    <div style="display: flex; gap: 2rem; margin-bottom: 0.75rem; font-size: 0.84rem; color: #a0a0b0; flex-wrap: wrap;">
+        <div><strong>Padrão:</strong> <span id="modoInfo" style="color: #ffffff;">-</span></div>
+        <div><strong>Latência:</strong> <span id="tempoInfo" style="color: #ffffff;">-</span></div>
+    </div>
+
+    <div>
+        <strong style="font-size: 0.82rem; color: #a0a0b0;">Corpo da Resposta (JSON):</strong>
+        <pre><code id="payloadInfo">// Clique em uma das abordagens acima para visualizar o retorno.</code></pre>
+    </div>
+</div>
+
+<script>
+    async function executarChamada(url) {
+        var reqEl = document.getElementById('reqInfo');
+        var statusEl = document.getElementById('statusInfo');
+        var modoEl = document.getElementById('modoInfo');
+        var tempoEl = document.getElementById('tempoInfo');
+        var payloadEl = document.getElementById('payloadInfo');
+
+        reqEl.textContent = 'GET ' + url;
+        statusEl.textContent = 'Enviando...';
+        modoEl.textContent = 'Processando...';
+        tempoEl.textContent = '...';
+        payloadEl.textContent = 'Aguardando resposta do servidor legado...';
+
+        try {
+            var res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            statusEl.textContent = res.status + ' ' + res.statusText;
+
+            var json = await res.json();
+            modoEl.textContent = json.modoCliente;
+            tempoEl.textContent = json.tempoRespostaMs + ' ms';
+            payloadEl.textContent = JSON.stringify(json, null, 2);
+        } catch (err) {
+            statusEl.textContent = 'Erro';
+            payloadEl.textContent = err.toString();
+        }
+    }
+</script>
