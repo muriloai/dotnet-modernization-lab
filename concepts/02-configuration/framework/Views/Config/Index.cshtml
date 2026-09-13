@@ -1,0 +1,54 @@
+@{
+    ViewBag.Title = "Lab 02: Configuração (.NET Framework 4.8.1)";
+    var smtp = ViewBag.Smtp as ConfigurationDemo.Models.ConfiguracaoSmtpSection;
+}
+
+<span class="badge badge-legacy">Ambiente Legado: .NET Framework 4.8.1</span>
+<h1>Lab 02: Configuração com ConfigurationManager</h1>
+<p class="subtitle">Demonstração de leitura via Web.config, appSettings, connectionStrings e ConfigurationSection customizada.</p>
+
+<div class="grid">
+    <div class="card">
+        <h2>Configurações Básicas (appSettings)</h2>
+        <ul class="feature-list">
+            <li><span>Sistema:</span> <strong class="tag">@ViewBag.NomeSistema</strong></li>
+            <li><span>Ambiente:</span> <strong class="tag">@ViewBag.Ambiente</strong></li>
+            <li><span>Itens por Página:</span> <strong class="tag">@ViewBag.LimiteItensPorPagina</strong></li>
+            <li><span>Auditoria:</span> <strong class="tag">@(ViewBag.HabilitarAuditoria ? "Sim" : "Não")</strong></li>
+        </ul>
+        <h3>String de Conexão</h3>
+        <p class="tag" style="word-break: break-all;">@ViewBag.StringConexao</p>
+    </div>
+
+    <div class="card">
+        <h2>Seção Customizada (ConfigurationSection)</h2>
+        @if (smtp != null)
+        {
+            <ul class="feature-list">
+                <li><span>Servidor:</span> <strong class="tag">@smtp.Servidor</strong></li>
+                <li><span>Porta:</span> <strong class="tag">@smtp.Porta</strong></li>
+                <li><span>SSL Habilitado:</span> <strong class="tag">@(smtp.HabilitarSsl ? "Sim" : "Não")</strong></li>
+                <li><span>Remetente:</span> <strong class="tag">@smtp.EmailRemetente</strong></li>
+            </ul>
+        }
+        else
+        {
+            <p style="color: red;">A seção configuracaoSmtp não foi encontrada no Web.config.</p>
+        }
+        <h3>Limitações do Legado</h3>
+        <p style="font-size: 0.85rem; color: #6c757d;">Exigiu criar uma classe com ConfigurationProperty para cada atributo XML. Qualquer alteração no Web.config reinicia o IIS.</p>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>Como as Configurações eram Lidas no Legado</h2>
+    <p>No .NET Framework, a leitura dependia de chamadas estáticas à classe <code>ConfigurationManager</code>:</p>
+    <pre><code>// Leitura de string não tipada:
+string ambiente = ConfigurationManager.AppSettings["Ambiente"];
+
+// Conversão manual obrigatória para números:
+int limite = int.Parse(ConfigurationManager.AppSettings["LimiteItensPorPagina"] ?? "10");
+
+// Leitura de seção XML personalizada:
+var smtp = (ConfiguracaoSmtpSection)ConfigurationManager.GetSection("configuracaoSmtp");</code></pre>
+</div>
