@@ -1,0 +1,98 @@
+@{
+    ViewBag.Title = "Painel de Segurança Legada";
+}
+
+<div style="margin-bottom: 2rem;">
+    <h2>Defesas e Fragilidades no ASP.NET Clássico</h2>
+    <p class="subtitle">
+        Demonstração de como o .NET Framework 4.8.1 lidava com proteção Anti-CSRF,
+        configuração de cabeçalhos no IIS e serialização via <code>BinaryFormatter</code>.
+    </p>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <h3>1. Prevenção Anti-CSRF no MVC e Web API</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+            No modelo tradicional, o desenvolvedor precisava incluir manualmente <code>@@Html.AntiForgeryToken()</code> nos forms e <code>[ValidateAntiForgeryToken]</code> nos controllers.
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <a href="@Url.Action("Transferencia", "SegurancaMvc")" class="btn btn-primary" style="text-align: center;">
+                Acessar Formulário de Transferência
+                <small>Permite testar envio com e sem token Anti-CSRF.</small>
+            </a>
+            <button class="btn btn-secondary" onclick="testarWebApiCsrf(true)">
+                Testar Web API com Header X-XSRF-TOKEN
+                <small>Filtro manual ValidarAntiCsrfWebApi (200 OK).</small>
+            </button>
+            <button class="btn btn-danger" onclick="testarWebApiCsrf(false)">
+                Testar Web API SEM Header X-XSRF-TOKEN
+                <small>Simula requisição forjada sem token (400 Bad Request).</small>
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>2. Fragilidades do Modelo Legado</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Riscos arquiteturais comuns no ecossistema clássico:
+        </p>
+
+        <ul style="font-size: 0.88rem; line-height: 1.7; padding-left: 1.25rem; color: var(--text); margin-bottom: 1rem;">
+            <li><strong>CORS no Web.config:</strong> Cabeçalhos <code>Access-Control-Allow-Origin: *</code> no XML liberavam o domínio indiscriminadamente sem controle granular de endpoints.</li>
+            <li><strong>Serializador Inseguro:</strong> O <code>BinaryFormatter</code> era usado para estado de sessão e cache, permitindo execução remota de código (RCE) via desserialização maliciosa.</li>
+        </ul>
+
+        <div>
+            <a href="@Url.Action("TestarBinaryFormatter", "SegurancaMvc")" class="btn btn-warning" style="display: block; text-align: center;">
+                Ver Demonstração do BinaryFormatter Legado
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Console de Resultados para chamadas AJAX -->
+<div class="result-area">
+    <div class="result-header">
+        <div>
+            <strong>Resposta da Web API:</strong> <span id="apiStatus">-</span>
+        </div>
+    </div>
+    <pre><code id="apiPayload">// O resultado da requisição AJAX para a Web API 2 aparecerá aqui.</code></pre>
+</div>
+
+<script>
+    async function testarWebApiCsrf(enviarToken) {
+        var statusEl = document.getElementById('apiStatus');
+        var payloadEl = document.getElementById('apiPayload');
+
+        statusEl.textContent = 'Enviando...';
+        payloadEl.textContent = 'Processando chamada...';
+
+        var headers = { 'Content-Type': 'application/json' };
+        if (enviarToken) {
+            headers['X-XSRF-TOKEN'] = 'TOKEN_MOCK_LEGADO';
+        }
+
+        try {
+            var res = await fetch('/api/operacoes/transferir-protegida', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify({
+                    ContaOrigem: '111-222',
+                    ContaDestino: '333-444',
+                    Valor: 500.00,
+                    Descricao: 'Teste AJAX Web API'
+                })
+            });
+
+            statusEl.textContent = res.status + ' ' + res.statusText;
+            var json = await res.json();
+            payloadEl.textContent = JSON.stringify(json, null, 2);
+        } catch (err) {
+            statusEl.textContent = 'Erro';
+            payloadEl.textContent = err.toString();
+        }
+    }
+</script>

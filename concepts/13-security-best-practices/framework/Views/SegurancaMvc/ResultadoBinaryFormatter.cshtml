@@ -1,0 +1,61 @@
+@{
+    ViewBag.Title = "Demonstração do BinaryFormatter Legado";
+    var original = ViewBag.ObjetoOriginal as SecurityBestPracticesDemo.Models.ObjetoSessaoLegado;
+    var reconstruido = ViewBag.ObjetoReconstruido as SecurityBestPracticesDemo.Models.ObjetoSessaoLegado;
+}
+
+<div class="card" style="max-width: 750px; margin: 2rem auto;">
+    <div style="background-color: #fff3cd; color: #664d03; padding: 1rem 1.25rem; border-radius: 6px; margin-bottom: 1.25rem; border: 1px solid #ffecb5;">
+        <h3 style="margin-bottom: 0.25rem; color: #664d03;">Alerta de Segurança: BinaryFormatter (.NET Framework 4.8.1)</h3>
+        <p style="font-size: 0.92rem; margin-top: 0.25rem;">
+            O <code>BinaryFormatter</code> serializa o grafo completo de objetos em formato binário bruto, incluindo metadados de tipo.
+            Se uma aplicação desserializar dados binários de origem não confiável, atacantes podem explorar cadeias de gadgets (gadget chains) para alcançar Execução Remota de Código (RCE).
+        </p>
+    </div>
+
+    <div style="margin-bottom: 1.5rem;">
+        <h4>Métricas da Operação</h4>
+        <p style="font-size: 0.9rem; color: var(--text-muted);">
+            Tamanho da carga serializada em bytes: <strong>@ViewBag.TamanhoBytes bytes</strong>
+        </p>
+    </div>
+
+    @if (original != null && reconstruido != null)
+    {
+        <div class="grid-2">
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 6px; border: 1px solid var(--border);">
+                <h5 style="margin-bottom: 0.5rem; color: var(--dark);">Objeto Original em Memória</h5>
+                <ul style="font-size: 0.85rem; list-style: none; line-height: 1.8;">
+                    <li><strong>Sessão:</strong> @original.IdentificadorSessao</li>
+                    <li><strong>Usuário:</strong> @original.Usuario</li>
+                    <li><strong>Saldo:</strong> R$ @original.SaldoDisponivel.ToString("N2")</li>
+                    <li><strong>Último Acesso:</strong> @original.UltimoAcesso.ToString("dd/MM/yyyy HH:mm:ss")</li>
+                </ul>
+            </div>
+
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 6px; border: 1px solid var(--border);">
+                <h5 style="margin-bottom: 0.5rem; color: var(--dark);">Objeto Desserializado</h5>
+                <ul style="font-size: 0.85rem; list-style: none; line-height: 1.8;">
+                    <li><strong>Sessão:</strong> @reconstruido.IdentificadorSessao</li>
+                    <li><strong>Usuário:</strong> @reconstruido.Usuario</li>
+                    <li><strong>Saldo:</strong> R$ @reconstruido.SaldoDisponivel.ToString("N2")</li>
+                    <li><strong>Último Acesso:</strong> @reconstruido.UltimoAcesso.ToString("dd/MM/yyyy HH:mm:ss")</li>
+                </ul>
+            </div>
+        </div>
+    }
+
+    <div style="background-color: #f8d7da; color: #842029; padding: 1rem; border-radius: 6px; margin-top: 1rem; font-size: 0.88rem; border: 1px solid #f5c2c7;">
+        <strong>Contraste com o .NET 10:</strong> No .NET 10, o <code>BinaryFormatter</code> foi completamente desativado no runtime.
+        Qualquer chamada lança <code>PlatformNotSupportedException</code> por padrão. A recomendação moderna e segura é a adoção exclusiva do <code>System.Text.Json</code>.
+    </div>
+
+    <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+        <a href="@Url.Action("Index", "SegurancaMvc")" class="btn btn-primary" style="text-decoration: none;">
+            Voltar ao Painel
+        </a>
+        <a href="@Url.Action("Transferencia", "SegurancaMvc")" class="btn btn-secondary" style="text-decoration: none;">
+            Testar Formulário CSRF
+        </a>
+    </div>
+</div>

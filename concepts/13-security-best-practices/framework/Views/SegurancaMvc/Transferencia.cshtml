@@ -1,0 +1,64 @@
+@model SecurityBestPracticesDemo.Models.TransferenciaModel
+
+@{
+    ViewBag.Title = "Formulário de Transferência";
+}
+
+<div style="max-width: 650px; margin: 0 auto;">
+    <div style="margin-bottom: 1.5rem;">
+        <h2>Transferência Bancária (Simulação Anti-CSRF)</h2>
+        <p class="subtitle">
+            Compare o comportamento do formulário que inclui o token criptográfico <code>@@Html.AntiForgeryToken()</code>
+            versus um formulário vulnerável onde o token foi omitido pelo desenvolvedor.
+        </p>
+    </div>
+
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <h3>Formulário COM Proteção Anti-CSRF</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Inclui <code>@@Html.AntiForgeryToken()</code> gerando um campo oculto <code>__RequestVerificationToken</code> validado pelo atributo <code>[ValidateAntiForgeryToken]</code>.
+        </p>
+
+        @using (Html.BeginForm("TransferirComProtecao", "SegurancaMvc", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+
+            <div class="form-group">
+                @Html.LabelFor(m => m.ContaOrigem)
+                @Html.TextBoxFor(m => m.ContaOrigem, new { @class = "form-control" })
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(m => m.ContaDestino)
+                @Html.TextBoxFor(m => m.ContaDestino, new { @class = "form-control" })
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(m => m.Valor)
+                @Html.TextBoxFor(m => m.Valor, new { @class = "form-control", type = "number", step = "0.01" })
+            </div>
+
+            <button type="submit" class="btn btn-success" style="width: 100%; text-align: center;">
+                Executar Transferência Protegida (POST com Token)
+            </button>
+        }
+    </div>
+
+    <div class="card" style="border-color: #f5c2c7; background: #fff8f8;">
+        <h3 style="color: var(--danger);">Formulário SEM Proteção Anti-CSRF (Vulnerável)</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+            O desenvolvedor esqueceu a tag do token e o atributo de validação na action.
+        </p>
+
+        @using (Html.BeginForm("TransferirSemProtecao", "SegurancaMvc", FormMethod.Post))
+        {
+            @Html.HiddenFor(m => m.ContaOrigem)
+            @Html.HiddenFor(m => m.ContaDestino)
+            @Html.HiddenFor(m => m.Valor)
+
+            <button type="submit" class="btn btn-danger" style="width: 100%; text-align: center;">
+                Executar Transferência Sem Proteção (POST vulnerável a CSRF)
+            </button>
+        }
+    </div>
+</div>

@@ -55,6 +55,7 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------ |
 | [11](concepts/11-authentication/README.md)    | Autenticação                         | FormsAuthentication, MachineKey, cookies proprietários e IPrincipal | AddAuthentication, Cookie e JWT Bearer, ClaimsPrincipal e SignInAsync | Concluído    |
 | [12](concepts/12-authorization-policies/README.md) | Autorização e Políticas              | [Authorize(Roles = "Admin")], papéis estáticos e checagens manuais no código | AddAuthorization, Policy-based Authorization, IAuthorizationRequirement e handlers | Concluído    |
+| [13](concepts/13-security-best-practices/README.md) | Práticas de Segurança                | AntiForgery manual, cabeçalhos em Web.config e risco do BinaryFormatter | UseAntiforgery, AddCors tipado, Security Headers em middleware e System.Text.Json | Concluído    |
 
 ---
 

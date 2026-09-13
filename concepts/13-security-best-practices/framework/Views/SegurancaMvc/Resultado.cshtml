@@ -1,0 +1,32 @@
+@{
+    ViewBag.Title = "Resultado da Operação";
+    var dados = ViewBag.Dados as SecurityBestPracticesDemo.Models.TransferenciaModel;
+}
+
+<div class="card" style="max-width: 650px; margin: 2rem auto;">
+    <div style="background-color: #d1e7dd; color: #0f5132; padding: 1rem 1.25rem; border-radius: 6px; margin-bottom: 1.25rem; border: 1px solid #badbcc;">
+        <h3 style="margin-bottom: 0.25rem; color: #0f5132;">@ViewBag.Status</h3>
+        <p style="font-size: 0.92rem; margin-top: 0.25rem;">
+            @ViewBag.Mensagem
+        </p>
+    </div>
+
+    @if (dados != null)
+    {
+        <div style="font-size: 0.88rem; line-height: 1.7; background: #f8f9fa; padding: 1rem; border-radius: 6px; border: 1px solid var(--border);">
+            <div><strong>Modo de Execução:</strong> @ViewBag.Tipo</div>
+            <div><strong>Conta de Origem:</strong> @dados.ContaOrigem</div>
+            <div><strong>Conta de Destino:</strong> @dados.ContaDestino</div>
+            <div><strong>Valor Transferido:</strong> R$ @dados.Valor.ToString("N2")</div>
+        </div>
+    }
+
+    <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+        <a href="@Url.Action("Transferencia", "SegurancaMvc")" class="btn btn-secondary" style="text-decoration: none;">
+            Nova Transferência
+        </a>
+        <a href="@Url.Action("Index", "SegurancaMvc")" class="btn btn-primary" style="text-decoration: none;">
+            Voltar ao Painel
+        </a>
+    </div>
+</div>

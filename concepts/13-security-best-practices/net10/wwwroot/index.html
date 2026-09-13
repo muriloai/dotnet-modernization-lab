@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 13: Práticas de Segurança (.NET 10)</title>
+    <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+    <div class="container">
+        <span class="badge badge-modern">ASP.NET Core (.NET 10) - Porta 6300</span>
+        <h1>Laboratório de Práticas de Segurança Web</h1>
+        <p class="subtitle">
+            Demonstração prática das defesas em camadas do .NET 10: Prevenção contra CSRF via IAntiforgery,
+            políticas restritivas de CORS, cabeçalhos de segurança HTTP e substituição segura do BinaryFormatter.
+        </p>
+
+        <!-- Barra de Status do Token Anti-CSRF -->
+        <div style="background: #f1f3f5; border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <strong>Status do Token Anti-CSRF (X-XSRF-TOKEN):</strong>
+                <span id="labelTokenStatus" style="color: var(--danger); font-weight: bold;">Não obtido</span>
+            </div>
+            <div>
+                <button class="btn btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.82rem;" onclick="obterTokenCsrf()">
+                    Obter Novo Token
+                </button>
+            </div>
+        </div>
+
+        <div class="grid-3">
+            <!-- Coluna 1: Prevenção contra CSRF -->
+            <div class="card">
+                <h2>1. Proteção Anti-CSRF</h2>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    Validação no pipeline via serviço <code>IAntiforgery</code>:
+                </p>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="enviarTransferencia('com-token')">
+                        Transferência com Token Válido
+                        <small>Envia o cabeçalho X-XSRF-TOKEN com cookie correspondente (200 OK).</small>
+                    </button>
+
+                    <button class="btn btn-danger" onclick="enviarTransferencia('sem-token')">
+                        Transferência SEM Token
+                        <small>Simula ataque de forja de requisição sem token (400 Bad Request).</small>
+                    </button>
+
+                    <button class="btn btn-warning" onclick="enviarTransferencia('token-forjado')">
+                        Transferência com Token Forjado
+                        <small>Envia valor adulterado para testar rejeição criptográfica.</small>
+                    </button>
+
+                    <button class="btn btn-secondary" onclick="enviarTransferencia('insegura')">
+                        Endpoint Sem Proteção
+                        <small>Demonstra a vulnerabilidade quando o antiforgery é omitido.</small>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Coluna 2: Cabeçalhos e CORS -->
+            <div class="card">
+                <h2>2. Headers e CORS</h2>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    Injeção de cabeçalhos de defesa e restrição de origens:
+                </p>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="inspecionarHeaders()">
+                        Inspecionar Headers de Segurança
+                        <small>Verifica CSP, X-Frame-Options (Clickjacking) e nosniff.</small>
+                    </button>
+
+                    <button class="btn btn-secondary" onclick="testarCors()">
+                        Testar Política Restritiva de CORS
+                        <small>Endpoint com [EnableCors('PoliticaRestritaParceiro')].</small>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Coluna 3: Serialização Segura -->
+            <div class="card">
+                <h2>3. Serialização Segura</h2>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    System.Text.Json vs eliminação do BinaryFormatter:
+                </p>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="executarSerializacao('json')">
+                        System.Text.Json Tipado
+                        <small>Serialização segura sem risco de Remote Code Execution.</small>
+                    </button>
+
+                    <button class="btn btn-danger" onclick="executarSerializacao('binary-formatter')">
+                        Bloqueio do BinaryFormatter
+                        <small>Demonstra a exceção proposital de proteção no .NET 10.</small>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Área de Resultados -->
+        <div class="result-area">
+            <div class="result-header">
+                <div>
+                    <strong>Operação:</strong> <span id="resEndpoint">Aguardando chamada...</span>
+                </div>
+                <div>
+                    <span id="resStatusBadge" class="status-badge" style="display: none;"></span>
+                </div>
+            </div>
+            <div style="margin-bottom: 0.5rem; color: #a1a1aa; font-size: 0.82rem;">
+                <strong>Resultado da Defesa:</strong> <span id="resDefesa">-</span> |
+                <strong>Duração:</strong> <span id="resDuracao">-</span>
+            </div>
+            <pre><code id="resPayload">// Os resultados e cabeçalhos HTTP aparecerão aqui.</code></pre>
+        </div>
+
+        <div class="comparison-callout">
+            <strong>Diferencial do .NET 10:</strong>
+            No .NET clássico, proteções contra CSRF e CORS dependiam de tags estáticas no <code>Web.config</code> ou de atributos colocados manualmente em cada método.
+            No .NET 10, o middleware <code>UseAntiforgery</code>, as políticas tipadas de CORS, os cabeçalhos de defesa por middleware e o bloqueio automático de serializadores vulneráveis como <code>BinaryFormatter</code> formam um escudo robusto e centralizado.
+        </div>
+    </div>
+
+    <script>
+        let tokenCsrfAtual = null;
+
+        async function obterTokenCsrf() {
+            const endpointEl = document.getElementById('resEndpoint');
+            const statusEl = document.getElementById('resStatusBadge');
+            const payloadEl = document.getElementById('resPayload');
+            const labelToken = document.getElementById('labelTokenStatus');
+
+            endpointEl.textContent = 'GET /api/seguranca/token-antiforgery';
+            payloadEl.textContent = 'Obtendo token Anti-CSRF...';
+
+            try {
+                const res = await fetch('/api/seguranca/token-antiforgery');
+                const dados = await res.json();
+
+                tokenCsrfAtual = dados.requestToken;
+                labelToken.textContent = `Ativo (${tokenCsrfAtual.substring(0, 15)}...)`;
+                labelToken.style.color = 'var(--modern-green)';
+
+                statusEl.style.display = 'inline-block';
+                statusEl.textContent = `${res.status} ${res.statusText}`;
+                statusEl.className = 'status-badge status-200';
+
+                payloadEl.textContent = JSON.stringify(dados, null, 2);
+            } catch (err) {
+                payloadEl.textContent = err.toString();
+            }
+        }
+
+        async function enviarTransferencia(tipo) {
+            let url = '/api/seguranca/transferencia-protegida';
+            const headers = { 'Content-Type': 'application/json' };
+
+            if (tipo === 'com-token') {
+                if (!tokenCsrfAtual) {
+                    await obterTokenCsrf();
+                }
+                headers['X-XSRF-TOKEN'] = tokenCsrfAtual;
+            } else if (tipo === 'token-forjado') {
+                headers['X-XSRF-TOKEN'] = 'TOKEN_FALSIFICADO_INVALIDO_12345';
+            } else if (tipo === 'insegura') {
+                url = '/api/seguranca/transferencia-sem-protecao';
+            }
+
+            const corpo = {
+                contaOrigem: '123-45678-9',
+                contaDestino: '987-65432-1',
+                valor: 3500.00,
+                descricao: 'Transferência de Teste de Segurança'
+            };
+
+            await executarRequisicao(url, 'POST', headers, corpo);
+        }
+
+        async function inspecionarHeaders() {
+            await executarRequisicao('/api/seguranca/headers-seguranca', 'GET', {}, null);
+        }
+
+        async function testarCors() {
+            await executarRequisicao('/api/seguranca/cors-restrito', 'GET', {}, null);
+        }
+
+        async function executarSerializacao(modo) {
+            const url = modo === 'json'
+                ? '/api/serializacao/json-seguro'
+                : '/api/serializacao/tentativa-binary-formatter';
+
+            await executarRequisicao(url, 'GET', {}, null);
+        }
+
+        async function executarRequisicao(url, metodo, headersCustomizados, corpo) {
+            const endpointEl = document.getElementById('resEndpoint');
+            const statusEl = document.getElementById('resStatusBadge');
+            const defesaEl = document.getElementById('resDefesa');
+            const duracaoEl = document.getElementById('resDuracao');
+            const payloadEl = document.getElementById('resPayload');
+
+            endpointEl.textContent = `${metodo} ${url}`;
+            payloadEl.textContent = 'Executando requisição...';
+
+            const options = {
+                method: metodo,
+                headers: headersCustomizados,
+                credentials: 'include'
+            };
+
+            if (corpo) {
+                options.body = JSON.stringify(corpo);
+            }
+
+            const inicio = performance.now();
+
+            try {
+                const resposta = await fetch(url, options);
+                const fim = performance.now();
+
+                duracaoEl.textContent = `${Math.round(fim - inicio)} ms`;
+                statusEl.style.display = 'inline-block';
+                statusEl.textContent = `${resposta.status} ${resposta.statusText}`;
+                statusEl.className = 'status-badge status-' + resposta.status;
+
+                if (resposta.status === 200 || resposta.status === 201) {
+                    defesaEl.textContent = 'Operação Bem-Sucedida (Regras Atendidas)';
+                    defesaEl.style.color = 'var(--modern-green)';
+                } else if (resposta.status === 400) {
+                    defesaEl.textContent = 'Ataque/Requisição Bloqueada com Sucesso (400 Bad Request)';
+                    defesaEl.style.color = 'var(--danger)';
+                } else {
+                    defesaEl.textContent = `Status HTTP ${resposta.status}`;
+                    defesaEl.style.color = 'var(--text-muted)';
+                }
+
+                const texto = await resposta.text();
+                try {
+                    const json = JSON.parse(texto);
+                    payloadEl.textContent = JSON.stringify(json, null, 2);
+                } catch {
+                    payloadEl.textContent = texto;
+                }
+            } catch (err) {
+                const fim = performance.now();
+                duracaoEl.textContent = `${Math.round(fim - inicio)} ms`;
+                statusEl.style.display = 'inline-block';
+                statusEl.textContent = 'Erro';
+                statusEl.className = 'status-badge status-500';
+                payloadEl.textContent = err.toString();
+            }
+        }
+
+        window.addEventListener('load', obterTokenCsrf);
+    </script>
+</body>
+</html>
