@@ -49,6 +49,12 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | [09](concepts/09-repository-pattern/README.md) | Padrão Repositório e Unit of Work    | Repositórios genéricos (IRepository<T>), vazamento de IQueryable e UoW manual | Uso direto do DbContext com DI, repositórios de domínio (DDD) e transações assíncronas | Concluído    |
 | [10](concepts/10-data-validation/README.md)    | Validação de Dados e ProblemDetails  | DataAnnotations, checagem manual de ModelState.IsValid e erro proprietário | [ApiController] com validação automática, RFC 7807 ProblemDetails e IValidatableObject | Concluído    |
 
+### Segurança
+
+| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        | Status       |
+| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------ |
+| [11](concepts/11-authentication/README.md)    | Autenticação                         | FormsAuthentication, MachineKey, cookies proprietários e IPrincipal | AddAuthentication, Cookie e JWT Bearer, ClaimsPrincipal e SignInAsync | Concluído    |
+
 ---
 
 ## Pré-requisitos para Execução

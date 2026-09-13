@@ -1,0 +1,136 @@
+@{
+    ViewBag.Title = "Painel de Identidade Legada";
+}
+
+<div style="margin-bottom: 1.5rem;">
+    <h2>Inspeção da Identidade (IPrincipal e FormsAuthenticationTicket)</h2>
+    <p class="subtitle">
+        Esta página está protegida pelo atributo clássico <code>[Authorize]</code> do ASP.NET MVC 5.
+    </p>
+</div>
+
+<div class="grid-2">
+    <!-- Coluna 1: Dados do IPrincipal -->
+    <div class="card">
+        <h3>1. Objeto IPrincipal (HttpContext.Current.User)</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Representação herdada de identidade do .NET Framework baseada em papéis (Roles):
+        </p>
+
+        <table style="width: 100%; font-size: 0.88rem; border-collapse: collapse;">
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 0.5rem 0; font-weight: 600;">Nome (Identity.Name):</td>
+                <td style="padding: 0.5rem 0; color: var(--primary);">@ViewBag.NomeUsuario</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 0.5rem 0; font-weight: 600;">Tipo de Autenticação:</td>
+                <td style="padding: 0.5rem 0;">@ViewBag.TipoAutenticacao</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 0.5rem 0; font-weight: 600;">Papel Administrador:</td>
+                <td style="padding: 0.5rem 0;">
+                    @if (ViewBag.IsAdmin)
+                    {
+                        <span style="color: var(--success); font-weight: bold;">Sim (IsInRole: True)</span>
+                    }
+                    else
+                    {
+                        <span style="color: var(--text-muted);">Não (IsInRole: False)</span>
+                    }
+                </td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 0.5rem 0; font-weight: 600;">Papel Operador:</td>
+                <td style="padding: 0.5rem 0;">
+                    @if (ViewBag.IsOperador)
+                    {
+                        <span style="color: var(--success); font-weight: bold;">Sim (IsInRole: True)</span>
+                    }
+                    else
+                    {
+                        <span style="color: var(--text-muted);">Não (IsInRole: False)</span>
+                    }
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Coluna 2: Detalhes do FormsAuthenticationTicket -->
+    <div class="card">
+        <h3>2. Dados do FormsAuthenticationTicket</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Informações extraídas do cookie descriptografado via <code>FormsAuthentication.Decrypt()</code>:
+        </p>
+
+        <div style="font-size: 0.85rem; line-height: 1.7;">
+            <div><strong>Nome do Cookie:</strong> <code>@ViewBag.CookieNome</code></div>
+            <div><strong>Expiração do Ticket:</strong> @ViewBag.DataExpiracao</div>
+            <div style="margin-top: 0.5rem;">
+                <strong>String UserData (metadados manuais):</strong>
+                <pre style="background: #f8f9fa; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; margin-top: 0.25rem; font-size: 0.8rem; color: #d63384;">@ViewBag.UserData</pre>
+            </div>
+            <div style="margin-top: 0.5rem;">
+                <strong>Valor do Cookie Criptografado (MachineKey):</strong>
+                <div style="background: #f8f9fa; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.75rem; word-break: break-all; color: var(--text-muted); max-height: 80px; overflow-y: auto;">
+                    @ViewBag.CookieValor
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Teste com Web API 2 -->
+<div class="card" style="margin-top: 1.5rem;">
+    <h3>3. Chamada à Web API 2 Protegida</h3>
+    <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+        Teste como o endpoint <code>/api/painel/meu-perfil</code> recebe o cookie clássico e identifica o usuário autenticado:
+    </p>
+
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem;">
+        <button class="btn btn-primary" onclick="testarApiLegada('/api/painel/meu-perfil')">
+            Testar GET /api/painel/meu-perfil
+        </button>
+        <button class="btn btn-warning" onclick="testarApiLegada('/api/painel/dados-restritos-admin')">
+            Testar GET /api/painel/dados-restritos-admin
+        </button>
+    </div>
+
+    <div class="result-area">
+        <div class="result-header">
+            <div>
+                <strong>Resposta da Web API:</strong> <span id="apiStatus">-</span>
+            </div>
+        </div>
+        <pre><code id="apiPayload">// Clique em um dos botões acima para executar a chamada.</code></pre>
+    </div>
+</div>
+
+<script>
+    async function testarApiLegada(url) {
+        var statusEl = document.getElementById('apiStatus');
+        var payloadEl = document.getElementById('apiPayload');
+
+        statusEl.textContent = 'Chamando ' + url + '...';
+        payloadEl.textContent = 'Aguardando resposta...';
+
+        try {
+            var resposta = await fetch(url, {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            statusEl.textContent = resposta.status + ' ' + resposta.statusText;
+
+            var texto = await resposta.text();
+            try {
+                var json = JSON.parse(texto);
+                payloadEl.textContent = JSON.stringify(json, null, 2);
+            } catch (e) {
+                payloadEl.textContent = texto;
+            }
+        } catch (err) {
+            statusEl.textContent = 'Erro de comunicação';
+            payloadEl.textContent = err.toString();
+        }
+    }
+</script>

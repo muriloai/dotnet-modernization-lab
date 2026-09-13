@@ -1,0 +1,71 @@
+@model AuthenticationDemo.Models.LoginViewModel
+
+@{
+    ViewBag.Title = "Entrar no Sistema";
+}
+
+<div style="max-width: 550px; margin: 0 auto;">
+    <div style="margin-bottom: 1.5rem; text-align: center;">
+        <h2>Acesso ao Sistema Legado</h2>
+        <p class="subtitle">
+            Autenticação clássica via <code>FormsAuthentication</code> configurada no Web.config.
+        </p>
+    </div>
+
+    <!-- Contas de Teste Rápido -->
+    <div style="background: #f8f9fa; border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+        <p style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--dark);">
+            Contas de demonstração disponíveis:
+        </p>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-secondary" style="font-size: 0.82rem; padding: 0.4rem 0.75rem;" onclick="preencher('admin@empresa.com', 'admin123')">
+                Admin: admin@empresa.com
+            </button>
+            <button type="button" class="btn btn-secondary" style="font-size: 0.82rem; padding: 0.4rem 0.75rem;" onclick="preencher('operador@empresa.com', 'operador123')">
+                Operador: operador@empresa.com
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        @using (Html.BeginForm("Login", "Conta", new { ReturnUrl = ViewBag.ReturnUrl }, FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+
+            if (!ViewData.ModelState.IsValid)
+            {
+                <div style="background-color: #f8d7da; color: #842029; padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1.25rem; border: 1px solid #f5c2c7;">
+                    @Html.ValidationSummary(true)
+                </div>
+            }
+
+            <div class="form-group">
+                @Html.LabelFor(m => m.Email)
+                @Html.TextBoxFor(m => m.Email, new { @class = "form-control", id = "inputEmail", placeholder = "seu.email@empresa.com" })
+                @Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(m => m.Senha)
+                @Html.PasswordFor(m => m.Senha, new { @class = "form-control", id = "inputSenha" })
+                @Html.ValidationMessageFor(m => m.Senha, "", new { @class = "text-danger" })
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem;">
+                @Html.CheckBoxFor(m => m.LembrarMe, new { id = "checkLembrar" })
+                @Html.LabelFor(m => m.LembrarMe, new { style = "margin-bottom: 0; font-weight: normal; cursor: pointer;" })
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; text-align: center; padding: 0.75rem;">
+                Autenticar via FormsAuthentication
+            </button>
+        }
+    </div>
+</div>
+
+<script>
+    function preencher(email, senha) {
+        document.getElementById('inputEmail').value = email;
+        document.getElementById('inputSenha').value = senha;
+    }
+</script>

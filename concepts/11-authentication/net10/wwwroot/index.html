@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 11: Autenticação (.NET 10)</title>
+    <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+    <div class="container">
+        <span class="badge badge-modern">ASP.NET Core (.NET 10) - Porta 6100</span>
+        <h1>Laboratório de Autenticação Moderna</h1>
+        <p class="subtitle">
+            Demonstração prática de autenticação híbrida (Cookie para navegação web e JWT Bearer para APIs),
+            com gerenciamento de Claims e autorização granular no pipeline do .NET 10.
+        </p>
+
+        <!-- Barra de Status da Sessão Atual -->
+        <div style="background: #f1f3f5; border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <strong>Status Atual:</strong>
+                <span id="labelStatusAuth" style="color: var(--danger); font-weight: bold;">Não autenticado</span>
+            </div>
+            <div>
+                <strong>Token JWT em Memória:</strong>
+                <span id="labelStatusJwt" style="color: var(--text-muted);">Nenhum</span>
+            </div>
+        </div>
+
+        <div class="grid-3">
+            <!-- Coluna 1: Credenciais e Contas -->
+            <div class="card">
+                <h2>1. Credenciais</h2>
+                <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    Selecione uma conta para preenchimento rápido:
+                </p>
+
+                <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem;">
+                    <div class="user-pill" onclick="preencherUsuario('admin@empresa.com', 'admin123')">
+                        <strong>Admin:</strong> admin@empresa.com (admin123)
+                        <small style="display:block; color: var(--text-muted);">Perfil: Administrador</small>
+                    </div>
+                    <div class="user-pill" onclick="preencherUsuario('operador@empresa.com', 'operador123')">
+                        <strong>Operador:</strong> operador@empresa.com (operador123)
+                        <small style="display:block; color: var(--text-muted);">Perfil: Operador</small>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="campoEmail">E-mail</label>
+                    <input type="email" id="campoEmail" value="admin@empresa.com">
+                </div>
+                <div class="form-group">
+                    <label for="campoSenha">Senha</label>
+                    <input type="password" id="campoSenha" value="admin123">
+                </div>
+            </div>
+
+            <!-- Coluna 2: Emissão de Autenticação -->
+            <div class="card">
+                <h2>2. Emissão de Sessão</h2>
+                <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    Escolha o mecanismo para autenticar:
+                </p>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="efetuarLoginCookie()">
+                        Login com Cookie
+                        <small>Grava cookie criptografado com Claims no navegador.</small>
+                    </button>
+
+                    <button class="btn btn-primary" onclick="efetuarLoginJwt()">
+                        Login com Token JWT
+                        <small>Gera token Bearer assinado com HMAC-SHA256.</small>
+                    </button>
+
+                    <button class="btn btn-secondary" onclick="verificarStatus()">
+                        Inspecionar Identidade Atual
+                        <small>Chama GET /api/autenticacao/status.</small>
+                    </button>
+
+                    <button class="btn btn-danger" onclick="efetuarLogout()">
+                        Encerrar Sessão (Logout)
+                        <small>Revoga o cookie e limpa o token em memória.</small>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Coluna 3: Endpoints Protegidos -->
+            <div class="card">
+                <h2>3. Teste de Autorização</h2>
+                <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    Dispare requisições protegidas por [Authorize]:
+                </p>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="chamarEndpointProtegido('/api/painelprotegido/meu-perfil', 'COOKIE')">
+                        Meu Perfil (via Cookie)
+                        <small>Lê Claims do usuário logado por sessão web.</small>
+                    </button>
+
+                    <button class="btn btn-success" onclick="chamarEndpointProtegido('/api/painelprotegido/meu-perfil', 'JWT')">
+                        Meu Perfil (via JWT)
+                        <small>Envia Authorization: Bearer &lt;token&gt;.</small>
+                    </button>
+
+                    <button class="btn btn-warning" onclick="chamarEndpointProtegido('/api/painelprotegido/dados-restritos-admin', 'AUTO')">
+                        Área Restrita: Administrador
+                        <small>Requer papel Administrador (403 para Operador).</small>
+                    </button>
+
+                    <button class="btn btn-secondary" onclick="chamarEndpointProtegido('/api/painelprotegido/dados-operacionais', 'AUTO')">
+                        Área Operacional
+                        <small>Acessível por Operador e Administrador.</small>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Área de Resultados -->
+        <div class="result-area">
+            <div class="result-header">
+                <div>
+                    <strong>Endpoint:</strong> <span id="resEndpoint">Aguardando operação...</span>
+                </div>
+                <div>
+                    <span id="resStatusBadge" class="status-badge" style="display: none;"></span>
+                </div>
+            </div>
+            <div style="margin-bottom: 0.5rem; color: #a1a1aa; font-size: 0.82rem;">
+                <strong>Mecanismo Utilizado:</strong> <span id="resMecanismo">-</span> |
+                <strong>Duração:</strong> <span id="resDuracao">-</span>
+            </div>
+            <pre><code id="resPayload">// O resultado da autenticação e as Claims do usuário aparecerão aqui.</code></pre>
+        </div>
+
+        <div class="comparison-callout">
+            <strong>Diferencial do .NET 10:</strong>
+            Ao contrário do legado que exigia escolher entre <code>FormsAuthentication</code> em XML ou montar handlers manuais complexos,
+            o ASP.NET Core permite registrar esquemas independentes (<code>AddCookie</code> e <code>AddJwtBearer</code>) no mesmo contêiner.
+            Todos os mecanismos convergem para a mesma abstração universal: <code>ClaimsPrincipal</code>.
+        </div>
+    </div>
+
+    <script>
+        let tokenJwtAtual = null;
+
+        function preencherUsuario(email, senha) {
+            document.getElementById('campoEmail').value = email;
+            document.getElementById('campoSenha').value = senha;
+        }
+
+        async function efetuarLoginCookie() {
+            const email = document.getElementById('campoEmail').value;
+            const senha = document.getElementById('campoSenha').value;
+
+            await executarChamada('/api/autenticacao/login-cookie', 'POST', {
+                email: email,
+                senha: senha,
+                lembrarMe: true
+            }, 'Cookie', false);
+
+            await verificarStatus();
+        }
+
+        async function efetuarLoginJwt() {
+            const email = document.getElementById('campoEmail').value;
+            const senha = document.getElementById('campoSenha').value;
+
+            const res = await executarChamada('/api/autenticacao/login-jwt', 'POST', {
+                email: email,
+                senha: senha,
+                lembrarMe: false
+            }, 'Nenhum (Solicitação de Token)', false);
+
+            if (res && res.token) {
+                tokenJwtAtual = res.token;
+                document.getElementById('labelStatusJwt').textContent = `Ativo (${res.perfil})`;
+                document.getElementById('labelStatusJwt').style.color = 'var(--modern-green)';
+            }
+        }
+
+        async function efetuarLogout() {
+            await executarChamada('/api/autenticacao/logout', 'POST', null, 'Cookie', false);
+            tokenJwtAtual = null;
+            document.getElementById('labelStatusJwt').textContent = 'Nenhum';
+            document.getElementById('labelStatusJwt').style.color = 'var(--text-muted)';
+            await verificarStatus();
+        }
+
+        async function verificarStatus() {
+            const dados = await executarChamada('/api/autenticacao/status', 'GET', null, 'Cookie Automático', false);
+            const statusEl = document.getElementById('labelStatusAuth');
+
+            if (dados && dados.autenticado) {
+                statusEl.textContent = `Autenticado como: ${dados.nome} (${dados.tipoAutenticacao})`;
+                statusEl.style.color = 'var(--modern-green)';
+            } else {
+                statusEl.textContent = 'Não autenticado via Cookie';
+                statusEl.style.color = 'var(--danger)';
+            }
+        }
+
+        async function chamarEndpointProtegido(url, modo) {
+            let usarJwt = false;
+            let descricaoMecanismo = 'Cookie';
+
+            if (modo === 'JWT') {
+                if (!tokenJwtAtual) {
+                    alert('Nenhum token JWT disponível! Clique em "Login com Token JWT" primeiro.');
+                    return;
+                }
+                usarJwt = true;
+                descricaoMecanismo = 'JWT Bearer';
+            } else if (modo === 'AUTO') {
+                if (tokenJwtAtual) {
+                    usarJwt = true;
+                    descricaoMecanismo = 'JWT Bearer (Preferencial)';
+                } else {
+                    descricaoMecanismo = 'Cookie (Navegador)';
+                }
+            }
+
+            await executarChamada(url, 'GET', null, descricaoMecanismo, usarJwt);
+        }
+
+        async function executarChamada(url, metodo, corpo, mecanismo, incluirJwt) {
+            const endpointEl = document.getElementById('resEndpoint');
+            const statusEl = document.getElementById('resStatusBadge');
+            const mecanismoEl = document.getElementById('resMecanismo');
+            const duracaoEl = document.getElementById('resDuracao');
+            const payloadEl = document.getElementById('resPayload');
+
+            endpointEl.textContent = `${metodo} ${url}`;
+            mecanismoEl.textContent = mecanismo;
+            payloadEl.textContent = 'Processando...';
+
+            const headers = { 'Content-Type': 'application/json' };
+            if (incluirJwt && tokenJwtAtual) {
+                headers['Authorization'] = `Bearer ${tokenJwtAtual}`;
+            }
+
+            const options = {
+                method: metodo,
+                headers: headers,
+                credentials: 'include' // Envia cookies de autenticação automaticamente
+            };
+
+            if (corpo) {
+                options.body = JSON.stringify(corpo);
+            }
+
+            const inicio = performance.now();
+
+            try {
+                const resposta = await fetch(url, options);
+                const fim = performance.now();
+
+                duracaoEl.textContent = `${Math.round(fim - inicio)} ms`;
+                statusEl.style.display = 'inline-block';
+                statusEl.textContent = `${resposta.status} ${resposta.statusText}`;
+                statusEl.className = 'status-badge status-' + resposta.status;
+
+                const dados = await resposta.json();
+                payloadEl.textContent = JSON.stringify(dados, null, 2);
+                return dados;
+            } catch (err) {
+                const fim = performance.now();
+                duracaoEl.textContent = `${Math.round(fim - inicio)} ms`;
+                statusEl.style.display = 'inline-block';
+                statusEl.textContent = 'Erro';
+                statusEl.className = 'status-badge status-500';
+                payloadEl.textContent = err.toString();
+                return null;
+            }
+        }
+
+        // Checagem inicial de status ao carregar a página
+        window.addEventListener('load', verificarStatus);
+    </script>
+</body>
+</html>

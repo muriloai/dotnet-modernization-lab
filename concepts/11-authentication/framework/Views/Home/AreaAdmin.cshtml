@@ -1,0 +1,29 @@
+@{
+    ViewBag.Title = "Área Administrativa";
+}
+
+<div style="margin-bottom: 2rem;">
+    <h2>Área Restrita: Administrador</h2>
+    <p class="subtitle">
+        Acesso validado através do filtro <code>[Authorize(Roles = "Administrador")]</code> do ASP.NET MVC 5.
+    </p>
+</div>
+
+<div class="card">
+    <div style="background-color: #d1e7dd; color: #0f5132; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem; border: 1px solid #badbcc;">
+        <strong>Autorização Concedida!</strong>
+        <p style="margin-top: 0.25rem; font-size: 0.9rem;">
+            O usuário <strong>@User.Identity.Name</strong> possui a permissão exigida e foi autenticado com sucesso pelo FormsAuthentication.
+        </p>
+    </div>
+
+    <p style="font-size: 0.9rem; line-height: 1.6; color: var(--text);">
+        No .NET Framework clássico, a verificação de papéis dependia da checagem <code>IsInRole("Administrador")</code> sobre o objeto <code>GenericPrincipal</code> construído manualmente no <code>Global.asax.cs</code> após a descriptografia do ticket.
+    </p>
+
+    <div style="margin-top: 1.5rem;">
+        <a href="@Url.Action("Index", "Home")" class="btn btn-secondary" style="text-decoration: none;">
+            Voltar ao Painel
+        </a>
+    </div>
+</div>
