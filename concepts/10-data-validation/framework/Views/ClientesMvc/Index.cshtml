@@ -1,0 +1,176 @@
+@{
+    ViewBag.Title = "Painel da API Legada";
+}
+
+<div style="margin-bottom: 2rem;">
+    <h2>Console de Testes da Web API 2 Clássica</h2>
+    <p class="subtitle">
+        Teste a validação do endpoint <code>POST /api/clientes</code> e veja como o ASP.NET Web API 2
+        devolve erros em um formato proprietário (dicionário <code>modelState</code> sem padrão RFC 7807).
+    </p>
+</div>
+
+<div class="grid-2">
+    <div class="card">
+        <h3>Cenários Didáticos de Teste</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Selecione uma ação para enviar dados à Web API e inspecionar a resposta HTTP:
+        </p>
+
+        <div class="btn-group">
+            <button class="btn btn-success" onclick="enviarRequisicaoLegada('valido')">
+                1. Enviar Payload Válido
+                <small>Retorna 201 Created com os dados salvos.</small>
+            </button>
+
+            <button class="btn btn-danger" onclick="enviarRequisicaoLegada('invalido-data-annotations')">
+                2. Erros de DataAnnotations
+                <small>Retorna 400 Bad Request com dicionário proprietário modelState.</small>
+            </button>
+
+            <button class="btn btn-warning" onclick="enviarRequisicaoLegada('invalido-composta')">
+                3. Validação Composta (IValidatableObject)
+                <small>Limite de crédito maior que 5x renda. Retorna 400 no formato legado.</small>
+            </button>
+
+            <button class="btn btn-secondary" onclick="enviarRequisicaoLegada('conflito-negocio')">
+                4. Conflito de Regra de Negócio
+                <small>E-mail @@bloqueado.com. Retorna 409 Conflict sem padronização RFC.</small>
+            </button>
+
+            <button class="btn btn-info" onclick="enviarRequisicaoLegada('falha-interna')">
+                5. Falha Interna de Servidor
+                <small>Exceção não tratada. Retorna 500 com formato genérico de erro da Web API.</small>
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Características do Modelo Legado</h3>
+        <ul style="padding-left: 1.25rem; font-size: 0.9rem; line-height: 1.8; color: var(--text);">
+            <li><strong>Verificação Manual:</strong> Cada action precisa conter explicitamente <code>if (!ModelState.IsValid) return BadRequest(ModelState);</code>. Se omitido, a execução prossegue com dados inválidos.</li>
+            <li><strong>Checagem de Nulo:</strong> É necessário checar <code>if (dto == null)</code> manualmente caso o corpo venha em branco ou corrompido.</li>
+            <li><strong>Formato Proprietário:</strong> O corpo de resposta de erro possui chaves <code>message</code> e <code>modelState</code> com os nomes dos parâmetros (ex: <code>dto.Email</code>), sem aderência à RFC 7807.</li>
+            <li><strong>Sem Rastreabilidade Padronizada:</strong> Não há campo nativo de correlação de log (como <code>traceId</code>) no JSON de resposta.</li>
+        </ul>
+        <div style="margin-top: 1.5rem;">
+            <a href="@Url.Action("Criar", "ClientesMvc")" class="btn btn-primary" style="display: block; text-align: center; text-decoration: none;">
+                Acessar Formulário MVC Clássico
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="result-area">
+    <div class="result-header">
+        <div>
+            <strong>Endpoint:</strong> <span id="resEndpoint">Aguardando requisição...</span>
+        </div>
+        <div>
+            <span id="resStatusBadge" class="status-badge" style="display: none;"></span>
+        </div>
+    </div>
+    <div style="margin-bottom: 0.5rem; color: #a1a1aa; font-size: 0.82rem;">
+        <strong>Content-Type:</strong> <span id="resContentType">-</span> |
+        <strong>Duração:</strong> <span id="resDuracao">-</span>
+    </div>
+    <pre><code id="resPayload">// A resposta da Web API clássica aparecerá aqui.</code></pre>
+</div>
+
+<script>
+    async function enviarRequisicaoLegada(cenario) {
+        var url = '/api/clientes';
+        var metodo = 'POST';
+        var corpo = null;
+
+        if (cenario === 'valido') {
+            corpo = {
+                Nome: 'Fernando Costa',
+                Email: 'fernando.costa@exemplo.com.br',
+                Cpf: '11144477735',
+                Idade: 38,
+                RendaMensal: 7500.00,
+                LimiteCreditoSolicitado: 20000.00,
+                PossuiRepresentante: false
+            };
+        } else if (cenario === 'invalido-data-annotations') {
+            corpo = {
+                Nome: 'Jo',
+                Email: 'email-invalido',
+                Cpf: '00000000000',
+                Idade: 14,
+                RendaMensal: -50.00,
+                LimiteCreditoSolicitado: 5000.00
+            };
+        } else if (cenario === 'invalido-composta') {
+            corpo = {
+                Nome: 'Ana Carolina',
+                Email: 'ana.carolina@exemplo.com.br',
+                Cpf: '11144477735',
+                Idade: 30,
+                RendaMensal: 2000.00,
+                LimiteCreditoSolicitado: 18000.00,
+                PossuiRepresentante: true,
+                NomeRepresentante: '',
+                CpfRepresentante: ''
+            };
+        } else if (cenario === 'conflito-negocio') {
+            corpo = {
+                Nome: 'Usuario Restrito',
+                Email: 'teste@bloqueado.com',
+                Cpf: '11144477735',
+                Idade: 35,
+                RendaMensal: 5000.00,
+                LimiteCreditoSolicitado: 10000.00
+            };
+        } else if (cenario === 'falha-interna') {
+            url = '/api/clientes/simular-falha-interna';
+        }
+
+        var endpointEl = document.getElementById('resEndpoint');
+        var statusEl = document.getElementById('resStatusBadge');
+        var contentTypeEl = document.getElementById('resContentType');
+        var duracaoEl = document.getElementById('resDuracao');
+        var payloadEl = document.getElementById('resPayload');
+
+        endpointEl.textContent = metodo + ' ' + url;
+        payloadEl.textContent = 'Enviando...';
+
+        var inicio = performance.now();
+
+        try {
+            var options = {
+                method: metodo,
+                headers: { 'Content-Type': 'application/json' }
+            };
+            if (corpo) {
+                options.body = JSON.stringify(corpo);
+            }
+
+            var resposta = await fetch(url, options);
+            var fim = performance.now();
+
+            duracaoEl.textContent = Math.round(fim - inicio) + ' ms';
+            contentTypeEl.textContent = resposta.headers.get('content-type') || 'não informado';
+
+            statusEl.style.display = 'inline-block';
+            statusEl.textContent = resposta.status + ' ' + resposta.statusText;
+            statusEl.className = 'status-badge status-' + resposta.status;
+
+            var texto = await resposta.text();
+            try {
+                var json = JSON.parse(texto);
+                payloadEl.textContent = JSON.stringify(json, null, 2);
+            } catch (e) {
+                payloadEl.textContent = texto;
+            }
+        } catch (err) {
+            var fim = performance.now();
+            duracaoEl.textContent = Math.round(fim - inicio) + ' ms';
+            statusEl.style.display = 'inline-block';
+            statusEl.textContent = 'Erro de Comunicação';
+            statusEl.className = 'status-badge status-500';
+            payloadEl.textContent = err.toString();
+        }
+    }
+</script>

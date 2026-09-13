@@ -1,0 +1,75 @@
+@model DataValidationDemo.Models.ClienteViewModel
+
+@{
+    ViewBag.Title = "Novo Cliente (MVC Clássico)";
+}
+
+<div style="margin-bottom: 2rem;">
+    <h2>Cadastro de Cliente (ASP.NET MVC 5 Clássico)</h2>
+    <p class="subtitle">
+        Demonstração do fluxo tradicional de validação: formulário HTML submetido via POST,
+        verificação manual em <code>if (!ModelState.IsValid)</code> e renderização das mensagens via <code>Html.ValidationMessageFor</code>.
+    </p>
+</div>
+
+<div class="card" style="max-width: 650px; margin: 0 auto;">
+    @using (Html.BeginForm("Criar", "ClientesMvc", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+
+        if (!ViewData.ModelState.IsValid)
+        {
+            <div style="background-color: #f8d7da; color: #842029; padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1.5rem; border: 1px solid #f5c2c7;">
+                <strong>Corrija os erros indicados abaixo antes de prosseguir:</strong>
+                @Html.ValidationSummary(true, "", new { @style = "margin-top: 0.5rem; padding-left: 1.25rem;" })
+            </div>
+        }
+
+        <div class="form-group">
+            @Html.LabelFor(m => m.Nome)
+            @Html.TextBoxFor(m => m.Nome, new { @class = "form-control", placeholder = "Ex: Carlos Silva" })
+            @Html.ValidationMessageFor(m => m.Nome, "", new { @class = "text-danger" })
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(m => m.Email)
+            @Html.TextBoxFor(m => m.Email, new { @class = "form-control", type = "email", placeholder = "Ex: carlos@empresa.com.br" })
+            @Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-danger" })
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(m => m.Cpf)
+            @Html.TextBoxFor(m => m.Cpf, new { @class = "form-control", placeholder = "Ex: 11144477735 ou 111.444.777-35" })
+            @Html.ValidationMessageFor(m => m.Cpf, "", new { @class = "text-danger" })
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                @Html.LabelFor(m => m.Idade)
+                @Html.TextBoxFor(m => m.Idade, new { @class = "form-control", type = "number" })
+                @Html.ValidationMessageFor(m => m.Idade, "", new { @class = "text-danger" })
+            </div>
+
+            <div class="form-group">
+                @Html.LabelFor(m => m.RendaMensal)
+                @Html.TextBoxFor(m => m.RendaMensal, new { @class = "form-control", type = "number", step = "0.01" })
+                @Html.ValidationMessageFor(m => m.RendaMensal, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(m => m.LimiteCreditoSolicitado)
+            @Html.TextBoxFor(m => m.LimiteCreditoSolicitado, new { @class = "form-control", type = "number", step = "0.01" })
+            @Html.ValidationMessageFor(m => m.LimiteCreditoSolicitado, "", new { @class = "text-danger" })
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary" style="flex: 1; text-align: center;">
+                Salvar Cliente (POST)
+            </button>
+            <a href="@Url.Action("Index", "ClientesMvc")" class="btn btn-secondary" style="text-align: center; text-decoration: none;">
+                Voltar
+            </a>
+        </div>
+    }
+</div>

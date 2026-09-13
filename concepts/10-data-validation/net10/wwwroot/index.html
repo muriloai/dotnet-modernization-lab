@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 10: Validação de Dados e ProblemDetails (.NET 10)</title>
+    <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+    <div class="container">
+        <span class="badge badge-modern">ASP.NET Core (.NET 10) - Porta 6000</span>
+        <h1>Validação de Dados e ProblemDetails (RFC 7807)</h1>
+        <p class="subtitle">
+            Demonstração prática da validação automática de modelos com [ApiController],
+            repostas padronizadas via ProblemDetails e validação composta com IValidatableObject.
+        </p>
+
+        <div class="grid-2">
+            <!-- Coluna 1: Cenários Predefinidos -->
+            <div class="card">
+                <h2>Cenários Didáticos de Teste</h2>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Clique em um dos botões abaixo para disparar requisições para a API e inspecionar a resposta HTTP retornada.
+                </p>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="enviarCenario('valido')">
+                        1. Enviar Payload Válido
+                        <small>Cadastra cliente com dados íntegros. Retorna 201 Created.</small>
+                    </button>
+
+                    <button class="btn btn-danger" onclick="enviarCenario('data-annotations-invalido')">
+                        2. Erros de DataAnnotations
+                        <small>E-mail incorreto, CPF em branco, idade menor que 18. Retorna 400 ProblemDetails.</small>
+                    </button>
+
+                    <button class="btn btn-warning" onclick="enviarCenario('validacao-composta-invalida')">
+                        3. Validação Composta (IValidatableObject)
+                        <small>Representante marcado sem nome/CPF e limite de crédito > 5x renda. Retorna 400.</small>
+                    </button>
+
+                    <button class="btn btn-secondary" onclick="enviarCenario('regra-negocio-conflito')">
+                        4. Conflito de Regra de Negócio
+                        <small>E-mail com domínio em lista restrita (@bloqueado.com). Retorna 409 Conflict ProblemDetails.</small>
+                    </button>
+
+                    <button class="btn btn-info" onclick="enviarCenario('falha-interna')">
+                        5. Falha Interna de Servidor
+                        <small>Dispara exceção tratada globalmente pelo AddProblemDetails. Retorna 500 ProblemDetails.</small>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Coluna 2: Formulário Customizado -->
+            <div class="card">
+                <h2>Envio Personalizado</h2>
+                <form id="formCliente" onsubmit="enviarFormulario(event)">
+                    <div class="form-group">
+                        <label for="campoNome">Nome Completo (Mín. 3 caracteres)</label>
+                        <input type="text" id="campoNome" required value="Carlos Eduardo">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="campoEmail">E-mail</label>
+                        <input type="email" id="campoEmail" required value="carlos.eduardo@exemplo.com.br">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="campoCpf">CPF (11 dígitos válidos)</label>
+                        <input type="text" id="campoCpf" required value="11144477735">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <div class="form-group">
+                            <label for="campoIdade">Idade (18 a 120)</label>
+                            <input type="number" id="campoIdade" value="29">
+                        </div>
+                        <div class="form-group">
+                            <label for="campoRenda">Renda Mensal (R$)</label>
+                            <input type="number" id="campoRenda" step="0.01" value="5000.00">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="campoLimite">Limite Solicitado (R$)</label>
+                        <input type="number" id="campoLimite" step="0.01" value="15000.00">
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="checkRepresentante" onchange="toggleRepresentante()">
+                        <label for="checkRepresentante" style="margin-bottom: 0;">Possui representante legal?</label>
+                    </div>
+
+                    <div id="painelRepresentante" style="display: none; background: #fdfdfd; border: 1px dashed var(--border); padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem;">
+                        <div class="form-group">
+                            <label for="campoNomeRep">Nome do Representante</label>
+                            <input type="text" id="campoNomeRep" value="">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="campoCpfRep">CPF do Representante</label>
+                            <input type="text" id="campoCpfRep" value="">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-info" style="width: 100%; text-align: center;">
+                        Submeter Requisição POST
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Área de Resultados -->
+        <div class="result-area">
+            <div class="result-header">
+                <div>
+                    <strong>Endpoint:</strong> <span id="resEndpoint">Aguardando requisição...</span>
+                </div>
+                <div>
+                    <span id="resStatusBadge" class="status-badge" style="display: none;"></span>
+                </div>
+            </div>
+            <div style="margin-bottom: 0.5rem; color: #a1a1aa; font-size: 0.82rem;">
+                <strong>Content-Type:</strong> <span id="resContentType">-</span> |
+                <strong>Duração:</strong> <span id="resDuracao">-</span>
+            </div>
+            <pre><code id="resPayload">// O resultado da validação e o corpo do ProblemDetails aparecerão aqui.</code></pre>
+        </div>
+
+        <div class="comparison-callout">
+            <strong>Diferencial Técnico do .NET 10:</strong>
+            O atributo <code>[ApiController]</code> intercepta a requisição antes mesmo de entrar no método da Controller.
+            Quando o modelo é inválido, o framework devolve automaticamente a estrutura <code>application/problem+json</code>
+            definida pela especificação <strong>RFC 7807</strong> e <strong>RFC 9457</strong>, contendo títulos padronizados, códigos numéricos
+            e o campo <code>traceId</code> para rastreabilidade de suporte, sem exigir repetição de código com <code>if (!ModelState.IsValid)</code>.
+        </div>
+    </div>
+
+    <script>
+        function toggleRepresentante() {
+            const check = document.getElementById('checkRepresentante');
+            const painel = document.getElementById('painelRepresentante');
+            painel.style.display = check.checked ? 'block' : 'none';
+        }
+
+        async function executarRequisicao(url, metodo, corpo) {
+            const endpointEl = document.getElementById('resEndpoint');
+            const statusEl = document.getElementById('resStatusBadge');
+            const contentTypeEl = document.getElementById('resContentType');
+            const duracaoEl = document.getElementById('resDuracao');
+            const payloadEl = document.getElementById('resPayload');
+
+            endpointEl.textContent = `${metodo} ${url}`;
+            payloadEl.textContent = 'Enviando requisição...';
+
+            const inicio = performance.now();
+
+            try {
+                const options = {
+                    method: metodo,
+                    headers: { 'Content-Type': 'application/json' }
+                };
+
+                if (corpo) {
+                    options.body = JSON.stringify(corpo);
+                }
+
+                const resposta = await fetch(url, options);
+                const fim = performance.now();
+
+                duracaoEl.textContent = `${Math.round(fim - inicio)} ms`;
+                contentTypeEl.textContent = resposta.headers.get('content-type') || 'não informado';
+
+                statusEl.style.display = 'inline-block';
+                statusEl.textContent = `${resposta.status} ${resposta.statusText}`;
+                statusEl.className = 'status-badge status-' + resposta.status;
+
+                const dados = await resposta.json();
+                payloadEl.textContent = JSON.stringify(dados, null, 2);
+            } catch (err) {
+                const fim = performance.now();
+                duracaoEl.textContent = `${Math.round(fim - inicio)} ms`;
+                statusEl.style.display = 'inline-block';
+                statusEl.textContent = 'Erro de Comunicação';
+                statusEl.className = 'status-badge status-500';
+                payloadEl.textContent = err.toString();
+            }
+        }
+
+        function enviarCenario(tipo) {
+            switch (tipo) {
+                case 'valido':
+                    executarRequisicao('/api/clientes', 'POST', {
+                        nome: 'Mariana Oliveira',
+                        email: 'mariana.oliveira@dominio.com.br',
+                        cpf: '11144477735',
+                        idade: 32,
+                        rendaMensal: 9200.00,
+                        limiteCreditoSolicitado: 30000.00,
+                        possuiRepresentante: false
+                    });
+                    break;
+
+                case 'data-annotations-invalido':
+                    executarRequisicao('/api/clientes', 'POST', {
+                        nome: 'Al', // Menor que 3 caracteres
+                        email: 'formato-invalido-sem-arroba',
+                        cpf: '00000000000', // Dígitos iguais e inválidos
+                        idade: 15, // Menor que 18
+                        rendaMensal: -100.00, // Menor que zero
+                        limiteCreditoSolicitado: 1000.00
+                    });
+                    break;
+
+                case 'validacao-composta-invalida':
+                    executarRequisicao('/api/clientes', 'POST', {
+                        nome: 'Roberto Santos',
+                        email: 'roberto.santos@dominio.com.br',
+                        cpf: '11144477735',
+                        idade: 45,
+                        rendaMensal: 3000.00,
+                        limiteCreditoSolicitado: 25000.00, // Excede 5x a renda mensal (15.000)
+                        possuiRepresentante: true,
+                        nomeRepresentante: '', // Obrigatório condicional
+                        cpfRepresentante: ''  // Obrigatório condicional
+                    });
+                    break;
+
+                case 'regra-negocio-conflito':
+                    executarRequisicao('/api/clientes', 'POST', {
+                        nome: 'Cliente Em Domínio Bloqueado',
+                        email: 'teste@bloqueado.com',
+                        cpf: '11144477735',
+                        idade: 28,
+                        rendaMensal: 4500.00,
+                        limiteCreditoSolicitado: 10000.00,
+                        possuiRepresentante: false
+                    });
+                    break;
+
+                case 'falha-interna':
+                    executarRequisicao('/api/clientes/simular-falha-interna', 'POST', null);
+                    break;
+            }
+        }
+
+        function enviarFormulario(e) {
+            e.preventDefault();
+
+            const corpo = {
+                nome: document.getElementById('campoNome').value,
+                email: document.getElementById('campoEmail').value,
+                cpf: document.getElementById('campoCpf').value,
+                idade: parseInt(document.getElementById('campoIdade').value, 10) || 0,
+                rendaMensal: parseFloat(document.getElementById('campoRenda').value) || 0,
+                limiteCreditoSolicitado: parseFloat(document.getElementById('campoLimite').value) || 0,
+                possuiRepresentante: document.getElementById('checkRepresentante').checked,
+                nomeRepresentante: document.getElementById('campoNomeRep').value,
+                cpfRepresentante: document.getElementById('campoCpfRep').value
+            };
+
+            executarRequisicao('/api/clientes', 'POST', corpo);
+        }
+    </script>
+</body>
+</html>

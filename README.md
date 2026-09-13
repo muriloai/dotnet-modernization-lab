@@ -47,6 +47,7 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------ |
 | [08](concepts/08-entity-framework/README.md)  | Entity Framework: EF 6 vs EF Core 10 | DbContext clássico, Web.config, inicializadores e roundtrips individuais | EF Core 10, AddDbContext, AsSplitQuery, ExecuteUpdate/Delete e batching nativo | Concluído    |
 | [09](concepts/09-repository-pattern/README.md) | Padrão Repositório e Unit of Work    | Repositórios genéricos (IRepository<T>), vazamento de IQueryable e UoW manual | Uso direto do DbContext com DI, repositórios de domínio (DDD) e transações assíncronas | Concluído    |
+| [10](concepts/10-data-validation/README.md)    | Validação de Dados e ProblemDetails  | DataAnnotations, checagem manual de ModelState.IsValid e erro proprietário | [ApiController] com validação automática, RFC 7807 ProblemDetails e IValidatableObject | Concluído    |
 
 ---
 
