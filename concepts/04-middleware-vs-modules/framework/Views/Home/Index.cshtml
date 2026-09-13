@@ -1,0 +1,45 @@
+@{
+    ViewBag.Title = "Lab 04: Módulos HTTP (.NET Framework 4.8.1)";
+}
+
+<span class="badge badge-legacy">Ambiente Legado: .NET Framework 4.8.1</span>
+<h1>Lab 04: Módulos e Handlers no IIS</h1>
+<p class="subtitle">Demonstração de interceptação de requisições através de IHttpModule e IHttpHandler.</p>
+
+<div class="grid">
+    <div class="card">
+        <h2>Ciclo de Vida do IIS (HttpApplication)</h2>
+        <div style="background: #fdf2f2; border-left: 4px solid #d9383a; padding: 0.75rem 1rem; margin-bottom: 0.75rem; border-radius: 0 4px 4px 0; font-size: 0.9rem;">
+            <strong>1. BeginRequest:</strong> RequestTimingModule inicia cronômetro e salva no <code>HttpContext.Items</code>.
+        </div>
+        <div style="background: #fdf2f2; border-left: 4px solid #d9383a; padding: 0.75rem 1rem; margin-bottom: 0.75rem; border-radius: 0 4px 4px 0; font-size: 0.9rem;">
+            <strong>2. Processamento MVC:</strong> Controller gera a View Razor.
+        </div>
+        <div style="background: #fdf2f2; border-left: 4px solid #d9383a; padding: 0.75rem 1rem; margin-bottom: 0.75rem; border-radius: 0 4px 4px 0; font-size: 0.9rem;">
+            <strong>3. PreSendRequestHeaders:</strong> CustomHeaderModule e RequestTimingModule adicionam os headers na resposta do IIS.
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Informações do Ambiente</h2>
+        <ul class="feature-list">
+            <li><span>Servidor Web:</span> <strong class="tag">@ViewBag.Servidor</strong></li>
+            <li><span>Método HTTP:</span> <strong class="tag">@ViewBag.Metodo</strong></li>
+            <li><span>Módulos Ativos:</span> <strong class="tag">RequestTiming, CustomHeader</strong></li>
+        </ul>
+        <h3 style="margin-top: 1rem;">Handler HTTP Terminal</h3>
+        <p style="font-size: 0.85rem; color: #495057; margin-bottom: 0.5rem;">
+            Acesse o endpoint direto sem passar pelo MVC:
+        </p>
+        <a href="/Handlers/HealthCheckHandler.ashx" target="_blank" style="font-family: monospace; color: #512bd4;">/Handlers/HealthCheckHandler.ashx</a>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>Limitações dos Módulos HTTP Legados</h2>
+    <ul style="padding-left: 1.25rem; font-size: 0.95rem; line-height: 1.8;">
+        <li><strong>Falta de fluxo bidirecional natural:</strong> O desenvolvedor precisava espalhar código entre <code>BeginRequest</code> e <code>EndRequest</code>, sincronizando dados por dicionários de contexto.</li>
+        <li><strong>Acoplamento ao XML:</strong> Qualquer módulo ou handler esquecido no <code>Web.config</code> simplesmente não era invocado, sem aviso do compilador.</li>
+        <li><strong>Dificuldade de Testes:</strong> Módulos dependem de instâncias ativas do <code>HttpApplication</code> e <code>HttpContext.Current</code>, impossibilitando testes unitários isolados.</li>
+    </ul>
+</div>

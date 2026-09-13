@@ -36,6 +36,7 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | [01](concepts/01-project-structure/README.md) | Estrutura de Projeto e Inicialização | MSBuild clássico XML, `Global.asax.cs`, IIS                   | SDK-style csproj, `Program.cs` com Top-Level, Kestrel                   | Concluído    |
 | [02](concepts/02-configuration/README.md)     | Configuração e Options Pattern       | `ConfigurationManager`, XML `Web.config`, seções customizadas | `IConfiguration`, JSON hierárquico, Options Pattern e `IOptionsMonitor` | Concluído    |
 | [03](concepts/03-dependency-injection/README.md) | Injeção de Dependências             | Sem DI nativo, containers externos e Service Locator          | Container de injeção nativo, ciclos de vida e Keyed Services            | Concluído    |
+| [04](concepts/04-middleware-vs-modules/README.md) | Middlewares vs Módulos HTTP         | IHttpModule, IHttpHandler e eventos do IIS                    | Pipeline linear de middlewares com RequestDelegate                      | Concluído    |
 
 ---
 
