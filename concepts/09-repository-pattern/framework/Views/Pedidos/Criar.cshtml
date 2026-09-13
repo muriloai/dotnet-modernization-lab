@@ -1,0 +1,42 @@
+@{
+    ViewBag.Title = "Criar Pedido - Unit of Work Legado";
+}
+
+<div style="margin-bottom: 1.5rem;">
+    <h1>Registrar Novo Pedido</h1>
+    <p class="subtitle">Este formulário persiste o pedido através da camada clássica de GenericRepository e Unit of Work.</p>
+</div>
+
+<div class="card" style="max-width: 650px;">
+    @using (Html.BeginForm("Criar", "Pedidos", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+
+        @Html.ValidationSummary(true, "", new { @class = "validation-summary" })
+
+        <div class="form-group">
+            <label class="form-label" for="clienteId">Cliente</label>
+            @Html.DropDownList("clienteId", (SelectList)ViewBag.Clientes, "Selecione um cliente...", new { @class = "form-control", required = "required" })
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="descricaoItem">Item / Produto</label>
+            <input name="descricaoItem" id="descricaoItem" class="form-control" placeholder="Ex: Notebook Dell Inspiron" required />
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="quantidade">Quantidade</label>
+            <input name="quantidade" id="quantidade" type="number" min="1" value="1" class="form-control" required />
+        </div>
+
+        <div class="form-group">
+            <label class="form-label" for="precoUnitario">Preço Unitário (R$)</label>
+            <input name="precoUnitario" id="precoUnitario" type="number" step="0.01" min="0.50" value="1500.00" class="form-control" required />
+        </div>
+
+        <div style="margin-top: 1.5rem; display: flex; gap: 0.75rem;">
+            <button type="submit" class="btn btn-primary" style="background-color: var(--legacy-red);">Salvar via Unit of Work</button>
+            <a href="@Url.Action("Index", "Pedidos")" class="btn btn-secondary">Cancelar</a>
+        </div>
+    }
+</div>

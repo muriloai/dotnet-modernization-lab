@@ -1,0 +1,50 @@
+@model RepositoryPatternDemo.Models.Pedido
+@{
+    ViewData["Title"] = "Detalhes do Pedido - " + Model.NumeroPedido;
+}
+
+<div style="margin-bottom: 1.5rem;">
+    <a asp-action="Index" class="btn btn-secondary" style="margin-bottom: 1rem;">&larr; Voltar para Pedidos</a>
+    <h1>Pedido: @Model.NumeroPedido</h1>
+    <p class="subtitle">Carregado via Repositório de Domínio (IPedidoRepository.ObterPorNumeroAsync) com Aggregate Root completo.</p>
+</div>
+
+<div class="grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 2rem;">
+    <div class="card">
+        <h3>Dados do Cliente</h3>
+        <p><strong>Nome:</strong> @Model.Cliente?.Nome</p>
+        <p><strong>E-mail:</strong> @Model.Cliente?.Email</p>
+        <p><strong>Documento:</strong> @Model.Cliente?.Documento</p>
+    </div>
+    <div class="card">
+        <h3>Dados do Pedido</h3>
+        <p><strong>Situação:</strong> <span class="badge" style="margin-bottom: 0;">@Model.Status</span></p>
+        <p><strong>Data de Emissão:</strong> @Model.DataCriacao.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")</p>
+        <p><strong>Total Geral:</strong> <span style="font-size: 1.2rem; font-weight: bold; color: var(--primary);">R$ @Model.ValorTotal.ToString("N2")</span></p>
+    </div>
+</div>
+
+<div class="card">
+    <h3 style="margin-bottom: 1rem;">Itens do Pedido (@Model.Itens.Count)</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Descrição do Produto</th>
+                <th>Quantidade</th>
+                <th>Preço Unitário</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Itens)
+            {
+                <tr>
+                    <td>@item.DescricaoProduto</td>
+                    <td>@item.Quantidade unid.</td>
+                    <td>R$ @item.PrecoUnitario.ToString("N2")</td>
+                    <td><strong>R$ @item.Subtotal.ToString("N2")</strong></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

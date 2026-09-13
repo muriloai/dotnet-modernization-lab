@@ -1,0 +1,79 @@
+@model System.Collections.Generic.IEnumerable<RepositoryPatternDemo.Models.Pedido>
+@{
+    ViewBag.Title = "Pedidos - Repositório Genérico e Unit of Work";
+}
+
+<div style="margin-bottom: 1.5rem;">
+    <h1>Gerenciamento de Pedidos (EF 6 + Unit of Work)</h1>
+    <p class="subtitle">Demonstração da abordagem clássica utilizando IRepository&lt;T&gt; e IUnitOfWork sobre o Entity Framework 6.</p>
+</div>
+
+@if (TempData["Sucesso"] != null)
+{
+    <div class="alert-success" style="margin-bottom: 1.5rem;">
+        @TempData["Sucesso"]
+    </div>
+}
+
+<div class="note-box" style="margin-bottom: 2rem; border-left-color: var(--legacy-red);">
+    <strong>Como era feito no modelo legado:</strong>
+    <p style="margin-top: 0.25rem;">
+        O controller consome <code>IUnitOfWork</code>, que instancia um <code>GenericRepository&lt;Pedido&gt;</code>. Para carregar dados relacionados (Cliente e Itens), é necessário passar expressões lambda através de parâmetros <code>params Expression&lt;Func&lt;T, object&gt;&gt;[]</code>, carregando entidades inteiras para a memória.
+    </p>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h2 style="margin: 0; font-size: 1.3rem;">Pedidos Registrados (@Model.Count())</h2>
+        <a href="@Url.Action("Criar", "Pedidos")" class="btn btn-primary" style="background-color: var(--legacy-red);">+ Novo Pedido</a>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Cliente</th>
+                <th>Data</th>
+                <th>Status</th>
+                <th>Itens</th>
+                <th>Valor Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pedido in Model)
+            {
+                <tr>
+                    <td><strong>@pedido.NumeroPedido</strong></td>
+                    <td>@(pedido.Cliente != null ? pedido.Cliente.Nome : "Desconhecido")</td>
+                    <td style="font-size: 0.85rem; color: var(--text-muted);">
+                        @pedido.DataCriacao.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                    </td>
+                    <td><span class="badge badge-legacy" style="margin-bottom: 0;">@pedido.Status</span></td>
+                    <td>@(pedido.Itens != null ? pedido.Itens.Count : 0) item(ns)</td>
+                    <td><strong>R$ @pedido.ValorTotal.ToString("N2")</strong></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <h3>1. Abstração sobre Abstração</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem;">
+            O <code>GenericRepository</code> simplesmente repassa chamadas para o <code>DbSet</code> interno, sem adicionar valor de negócio e duplicando métodos de consulta.
+        </p>
+    </div>
+    <div class="card">
+        <h3>2. O Dilema do IQueryable</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem;">
+            Se o repositório retornar <code>IQueryable</code>, a responsabilidade da consulta vaza para o controller. Se retornar <code>IEnumerable</code>, perde-se a capacidade de compor filtros no banco.
+        </p>
+    </div>
+    <div class="card">
+        <h3>3. Eager Loading Engessado</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem;">
+            Para incluir relacionamentos pelo repositório genérico, é necessário passar vetores de expressões lambda (como <code>p =&gt; p.Cliente</code>), o que polui as assinaturas de métodos.
+        </p>
+    </div>
+</div>

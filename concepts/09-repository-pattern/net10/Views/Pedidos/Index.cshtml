@@ -1,0 +1,97 @@
+@model IEnumerable<RepositoryPatternDemo.Models.DTOs.PedidoResumoDto>
+@{
+    ViewData["Title"] = "Pedidos - Abordagens Modernas";
+}
+
+<div style="margin-bottom: 1.5rem;">
+    <h1>Gerenciamento de Pedidos no .NET 10</h1>
+    <p class="subtitle">Comparação prática entre o uso direto do DbContext com projeções DTO e repositórios focados em regras de domínio (DDD).</p>
+</div>
+
+@if (TempData["Sucesso"] != null)
+{
+    <div class="alert alert-success" style="margin-bottom: 1.5rem;">
+        @TempData["Sucesso"]
+    </div>
+}
+
+<div class="grid" style="margin-bottom: 2rem;">
+    <div class="card card-accent">
+        <h3 style="color: var(--primary);">Abordagem 1: DbContext Direto</h3>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.5rem;">
+            A listagem abaixo foi obtida pelo <code>PedidoService</code> injetando o <code>AppDbContext</code> diretamente. O LINQ projetou os campos direto para o record <code>PedidoResumoDto</code>, sem carregar entidades completas na memória.
+        </p>
+    </div>
+    <div class="card" style="border-left: 4px solid var(--success);">
+        <h3 style="color: var(--success);">Abordagem 2: Repositório de Domínio</h3>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.5rem;">
+            A criação de novos pedidos utiliza o <code>IPedidoRepository</code>, gerenciando a consistência do agregado (Pedido + Itens) com uma transação atômica assíncrona (<code>BeginTransactionAsync</code>).
+        </p>
+    </div>
+</div>
+
+<div class="card" style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h2 style="margin: 0; font-size: 1.3rem;">Pedidos Registrados (@Model.Count())</h2>
+        <div style="display: flex; gap: 0.5rem;">
+            <form asp-action="ResetarBanco" method="post" style="display: inline;">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-secondary" style="font-size: 0.85rem;">Resetar Dados</button>
+            </form>
+            <a asp-action="Criar" class="btn btn-primary">+ Novo Pedido</a>
+        </div>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Número</th>
+                <th>Cliente</th>
+                <th>Data</th>
+                <th>Status</th>
+                <th>Itens</th>
+                <th>Valor Total</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pedido in Model)
+            {
+                <tr>
+                    <td><strong>@pedido.NumeroPedido</strong></td>
+                    <td>@pedido.NomeCliente</td>
+                    <td style="font-size: 0.85rem; color: var(--text-muted);">
+                        @pedido.DataCriacao.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
+                    </td>
+                    <td><span class="badge" style="margin-bottom: 0;">@pedido.Status</span></td>
+                    <td>@pedido.QuantidadeItens item(ns)</td>
+                    <td><strong>R$ @pedido.ValorTotal.ToString("N2")</strong></td>
+                    <td>
+                        <a asp-action="Detalhes" asp-route-id="@pedido.NumeroPedido" class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">Ver Detalhes</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="grid">
+    <div class="card">
+        <h3>1. Fim do IRepository&lt;T&gt; Genérico</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem;">
+            No .NET moderno, criar repositórios genéricos que apenas encapsulam chamadas para DbSet.Find ou DbSet.Add é considerado redundância desnecessária que prejudica a legibilidade.
+        </p>
+    </div>
+    <div class="card">
+        <h3>2. O DbContext é o Unit of Work</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem;">
+            O DbContext gerenciado pelo container de DI com ciclo de vida Scoped já atua como Unit of Work durante o escopo da requisição HTTP, confirmando tudo em SaveChangesAsync.
+        </p>
+    </div>
+    <div class="card">
+        <h3>3. Repositórios de Domínio no DDD</h3>
+        <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 0.5rem;">
+            Quando repositórios são necessários, eles devem refletir linguagem de negócio e limites de consistência de agregados, em vez de métodos genéricos de banco de dados.
+        </p>
+    </div>
+</div>
