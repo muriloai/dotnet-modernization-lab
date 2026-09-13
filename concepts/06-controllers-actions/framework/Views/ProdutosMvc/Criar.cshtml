@@ -1,0 +1,42 @@
+@model ControllersAndActionsDemo.Models.ProdutoViewModel
+@{
+    ViewBag.Title = "Cadastrar Produto (MVC 5)";
+}
+
+<span class="badge badge-legacy">Ambiente Legado: .NET Framework 4.8.1</span>
+<h1>Cadastrar Produto via Formulário MVC</h1>
+
+<div class="card" style="margin-top: 1.5rem; max-width: 600px;">
+    @using (Html.BeginForm("Criar", "ProdutosMvc", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+        @Html.ValidationSummary(true, "", new { @style = "color: red; margin-bottom: 1rem;" })
+
+        <div style="margin-bottom: 1rem;">
+            @Html.LabelFor(m => m.Nome, "Nome do Produto", new { @style = "display: block; font-weight: bold; margin-bottom: 0.3rem;" })
+            @Html.TextBoxFor(m => m.Nome, new { @style = "width: 100%; padding: 0.5rem; border: 1px solid #ced4da; border-radius: 4px;" })
+            @Html.ValidationMessageFor(m => m.Nome, "", new { @style = "color: red; font-size: 0.85rem;" })
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            @Html.LabelFor(m => m.Categoria, "Categoria", new { @style = "display: block; font-weight: bold; margin-bottom: 0.3rem;" })
+            @Html.TextBoxFor(m => m.Categoria, new { @style = "width: 100%; padding: 0.5rem; border: 1px solid #ced4da; border-radius: 4px;" })
+            @Html.ValidationMessageFor(m => m.Categoria, "", new { @style = "color: red; font-size: 0.85rem;" })
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+            @Html.LabelFor(m => m.Preco, "Preço (R$)", new { @style = "display: block; font-weight: bold; margin-bottom: 0.3rem;" })
+            @Html.TextBoxFor(m => m.Preco, new { @type = "number", @step = "0.01", @style = "width: 100%; padding: 0.5rem; border: 1px solid #ced4da; border-radius: 4px;" })
+            @Html.ValidationMessageFor(m => m.Preco, "", new { @style = "color: red; font-size: 0.85rem;" })
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label>
+                @Html.CheckBoxFor(m => m.EmEstoque) Disponível em Estoque
+            </label>
+        </div>
+
+        <button type="submit" style="background: #512bd4; color: white; padding: 0.6rem 1.2rem; border: none; border-radius: 4px; cursor: pointer;">Salvar Produto</button>
+        <a href="@Url.Action("Index", "ProdutosMvc")" style="margin-left: 1rem; color: #6c757d;">Cancelar</a>
+    }
+</div>

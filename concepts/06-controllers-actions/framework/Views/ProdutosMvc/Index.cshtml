@@ -1,0 +1,52 @@
+@model System.Collections.Generic.List<ControllersAndActionsDemo.Models.ProdutoDto>
+@{
+    ViewBag.Title = "Lab 06: Controllers e Actions (.NET Framework 4.8.1)";
+}
+
+<span class="badge badge-legacy">Ambiente Legado: .NET Framework 4.8.1</span>
+<h1>Lab 06: Controllers e Actions no Legado</h1>
+<p class="subtitle">Demonstração de System.Web.Mvc.Controller e System.Web.Http.ApiController.</p>
+
+<div class="grid">
+    <div class="card" style="grid-column: 1 / -1;">
+        <h2>Produtos Cadastrados (ViewResult do MVC)</h2>
+        <div style="margin-bottom: 1rem;">
+            <a href="@Url.Action("Criar", "ProdutosMvc")" style="background: #512bd4; color: white; padding: 0.4rem 0.8rem; border-radius: 4px; text-decoration: none; font-size: 0.9rem;">+ Cadastrar via Form MVC</a>
+            <a href="@Url.Action("ObterJson", "ProdutosMvc")" target="_blank" style="margin-left: 1rem; color: #512bd4; font-size: 0.9rem;">Ver via JsonResult (AllowGet)</a>
+            <a href="/api/produtos" target="_blank" style="margin-left: 1rem; color: #d9383a; font-size: 0.9rem;">Ver via Web API (ApiController)</a>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+            <thead>
+                <tr style="background: #f8f9fa; text-align: left;">
+                    <th style="padding: 0.5rem; border: 1px solid #dee2e6;">Id</th>
+                    <th style="padding: 0.5rem; border: 1px solid #dee2e6;">Nome</th>
+                    <th style="padding: 0.5rem; border: 1px solid #dee2e6;">Categoria</th>
+                    <th style="padding: 0.5rem; border: 1px solid #dee2e6;">Preço</th>
+                    <th style="padding: 0.5rem; border: 1px solid #dee2e6;">Estoque</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in Model)
+                {
+                    <tr>
+                        <td style="padding: 0.5rem; border: 1px solid #dee2e6;">@p.Id</td>
+                        <td style="padding: 0.5rem; border: 1px solid #dee2e6;">@p.Nome</td>
+                        <td style="padding: 0.5rem; border: 1px solid #dee2e6;">@p.Categoria</td>
+                        <td style="padding: 0.5rem; border: 1px solid #dee2e6;">R$ @p.Preco.ToString("N2")</td>
+                        <td style="padding: 0.5rem; border: 1px solid #dee2e6;">@(p.EmEstoque ? "Sim" : "Não")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>Incompatibilidades do Modelo Legado</h2>
+    <ul style="padding-left: 1.25rem; font-size: 0.95rem; line-height: 1.8;">
+        <li><strong>JsonResult vs IHttpActionResult:</strong> Para devolver JSON no MVC era necessário <code>Json(data, JsonRequestBehavior.AllowGet)</code>. Na Web API, usava-se <code>Ok(data)</code>.</li>
+        <li><strong>Validação boilerplate:</strong> Ambas as pilhas exigiam que o desenvolvedor escrevesse <code>if (!ModelState.IsValid)</code> manualmente em cada action de criação.</li>
+        <li><strong>Assinaturas conflitantes:</strong> Métodos comuns de action result tinham comportamentos e namespaces diferentes entre MVC e Web API.</li>
+    </ul>
+</div>
