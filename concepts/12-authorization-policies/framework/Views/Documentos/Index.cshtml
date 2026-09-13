@@ -1,0 +1,104 @@
+@{
+    ViewBag.Title = "Painel de Autorização Legada";
+    var usuario = ViewBag.UsuarioDados as AuthorizationPoliciesDemo.Models.UsuarioSessao;
+    var relatorios = ViewBag.Relatorios as IEnumerable<AuthorizationPoliciesDemo.Models.RelatorioFinanceiro>;
+}
+
+<div style="margin-bottom: 1.5rem;">
+    <h2>Painel de Teste de Autorização Clássica</h2>
+    <p class="subtitle">
+        Teste como as regras eram aplicadas no .NET Framework através de atributos <code>[Authorize(Roles)]</code>,
+        filtros herdados de <code>AuthorizeAttribute</code> e validações manuais procedurais dentro das actions.
+    </p>
+</div>
+
+<!-- Dados do Usuário Ativo -->
+<div class="card" style="margin-bottom: 1.5rem; background: #fdfdfd;">
+    <h3>Identidade Atual em HttpContext.Current.User</h3>
+    @if (usuario != null)
+    {
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; font-size: 0.88rem; margin-top: 0.5rem;">
+            <div><strong>Nome:</strong> @usuario.Nome</div>
+            <div><strong>Papel (Role):</strong> <span style="color: var(--primary); font-weight: bold;">@usuario.Perfil</span></div>
+            <div><strong>Departamento:</strong> @usuario.Departamento</div>
+            <div><strong>Idade:</strong> @usuario.Idade anos</div>
+            <div><strong>Experiência:</strong> @usuario.AnosExperiencia anos</div>
+        </div>
+    }
+    else
+    {
+        <p style="color: var(--danger);">Nenhum usuário autenticado. @Html.ActionLink("Clique aqui para selecionar um perfil", "SelecionarPerfil", "Conta").</p>
+    }
+</div>
+
+<div class="grid-2">
+    <!-- Coluna 1: Testes de Autorização Declarativa Clássica -->
+    <div class="card">
+        <h3>Regras Declarativas e Procedurais</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Clique nos botões abaixo para disparar as rotas protegidas:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+            <a href="@Url.Action("PainelGeral", "Documentos")" class="btn btn-secondary">
+                1. Painel Geral
+                <small>Apenas exige [Authorize]. Qualquer usuário autenticado tem acesso.</small>
+            </a>
+
+            <a href="@Url.Action("ApenasLideranca", "Documentos")" class="btn btn-primary">
+                2. Área de Liderança
+                <small>Exige [Authorize(Roles = "Administrador,Gerente")].</small>
+            </a>
+
+            <a href="@Url.Action("ModuloFinanceiro", "Documentos")" class="btn btn-warning">
+                3. Módulo Financeiro
+                <small>Exige atributo customizado [DepartamentoAuthorize("Financeiro")].</small>
+            </a>
+
+            <a href="@Url.Action("AssinaturaContratos", "Documentos")" class="btn btn-warning">
+                4. Assinatura de Contratos
+                <small>Exige atributo customizado [IdadeMinimaAuthorize(18)].</small>
+            </a>
+
+            <a href="@Url.Action("AprovacoesVultosas", "Documentos")" class="btn btn-danger">
+                5. Despesas Vultosas
+                <small>Verificação procedural manual (Liderança + Financeiro + Exp &gt;= 5 anos).</small>
+            </a>
+        </div>
+    </div>
+
+    <!-- Coluna 2: Autorização de Recurso Manual -->
+    <div class="card">
+        <h3>Autorização Manual de Recursos</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+            No modelo legado, verificar se o usuário é o autor do relatório exigia checagens manuais <code>if (relatorio.Autor != user)</code> na action:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            @if (relatorios != null)
+            {
+                foreach (var rel in relatorios)
+                {
+                    <div style="border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem; background: #ffffff;">
+                        <div style="font-weight: 600; font-size: 0.88rem;">@rel.Titulo</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">
+                            Autor: <strong>@rel.AutorNome</strong> (@rel.AutorEmail) | Depto: @rel.Departamento
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
+                            <span style="font-size: 0.82rem;">Status: <strong>@rel.Status</strong></span>
+                            @using (Html.BeginForm("AtualizarRelatorio", "Documentos", FormMethod.Post, new { style = "display: inline;" }))
+                            {
+                                @Html.AntiForgeryToken()
+                                @Html.Hidden("id", rel.Id)
+                                @Html.Hidden("novoStatus", "Aprovado via MVC Legado")
+                                <button type="submit" class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.78rem;">
+                                    Aprovar Relatório
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>

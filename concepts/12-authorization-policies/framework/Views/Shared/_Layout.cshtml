@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewBag.Title - Lab 12: Autorização e Políticas (.NET Framework 4.8.1)</title>
+    <link href="~/Content/Site.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+    <div class="container">
+        <header style="margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <span class="badge badge-legacy">ASP.NET (.NET Framework 4.8.1) - Porta 6201</span>
+                    <h1 style="font-size: 1.6rem; margin-top: 0.25rem;">Lab 12: Autorização e Papéis Legados</h1>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    @if (Request.IsAuthenticated)
+                    {
+                        <span style="font-size: 0.88rem; color: var(--text-muted);">
+                            Logado como: <strong>@User.Identity.Name</strong>
+                        </span>
+                        using (Html.BeginForm("Logout", "Conta", FormMethod.Post, new { style = "display: inline;" }))
+                        {
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-danger" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+                                Deslogar
+                            </button>
+                        }
+                    }
+                    @Html.ActionLink("Trocar Perfil", "SelecionarPerfil", "Conta", null, new { @class = "btn btn-secondary", style = "padding: 0.35rem 0.75rem; font-size: 0.85rem; text-decoration: none;" })
+                </div>
+            </div>
+            <nav style="display: flex; gap: 1rem; margin-top: 0.75rem;">
+                @Html.ActionLink("Painel de Políticas", "Index", "Documentos", null, new { @class = "nav-link" })
+            </nav>
+        </header>
+
+        @if (TempData["Mensagem"] != null)
+        {
+            <div style="background-color: #d1e7dd; color: #0f5132; padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1.5rem; border: 1px solid #badbcc;">
+                @TempData["Mensagem"]
+            </div>
+        }
+
+        @RenderBody()
+
+        <footer style="margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; color: var(--text-muted); text-align: center;">
+            .NET Modernization Lab - Conceito 12: Autorização e Políticas (.NET Framework 4.8.1 vs .NET 10)
+        </footer>
+    </div>
+</body>
+</html>

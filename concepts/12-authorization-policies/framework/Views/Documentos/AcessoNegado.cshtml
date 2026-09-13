@@ -1,0 +1,25 @@
+@{
+    ViewBag.Title = "Acesso Negado";
+}
+
+<div class="card" style="max-width: 650px; margin: 2rem auto;">
+    <div style="background-color: #f8d7da; color: #842029; padding: 1rem 1.25rem; border-radius: 6px; margin-bottom: 1.25rem; border: 1px solid #f5c2c7;">
+        <h3 style="margin-bottom: 0.25rem; color: #842029;">Acesso Negado (HTTP 403 Forbidden)</h3>
+        <p style="font-size: 0.92rem; margin-top: 0.25rem;">
+            @(ViewBag.Erro ?? "Você não possui as permissões exigidas para executar esta ação.")
+        </p>
+    </div>
+
+    <p style="font-size: 0.88rem; color: var(--text-muted);">
+        O usuário <strong>@User.Identity.Name</strong> não atendeu aos critérios estabelecidos para esta operação.
+    </p>
+
+    <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+        <a href="@Url.Action("Index", "Documentos")" class="btn btn-secondary" style="text-decoration: none;">
+            Voltar ao Painel
+        </a>
+        <a href="@Url.Action("SelecionarPerfil", "Conta")" class="btn btn-primary" style="text-decoration: none;">
+            Trocar de Usuário
+        </a>
+    </div>
+</div>

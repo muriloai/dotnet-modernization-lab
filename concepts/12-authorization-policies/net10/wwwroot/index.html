@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 12: Autorização e Políticas (.NET 10)</title>
+    <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+    <div class="container">
+        <span class="badge badge-modern">ASP.NET Core (.NET 10) - Porta 6200</span>
+        <h1>Autorização e Políticas (Policy-Based Authorization)</h1>
+        <p class="subtitle">
+            Comparativo prático da evolução de papéis estáticos para políticas declarativas,
+            requisitos customizados com handlers no contêiner de DI e autorização baseada em recursos.
+        </p>
+
+        <!-- Barra de Identidade Ativa -->
+        <div style="background: #f1f3f5; border: 1px solid var(--border); border-radius: 8px; padding: 0.85rem 1.25rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <strong>Identidade Ativa:</strong>
+                <span id="labelUsuarioAtivo" style="color: var(--danger); font-weight: bold;">Não autenticado</span>
+            </div>
+            <div>
+                <button class="btn btn-danger" style="padding: 0.3rem 0.65rem; font-size: 0.8rem;" onclick="deslogar()">
+                    Deslogar
+                </button>
+            </div>
+        </div>
+
+        <div class="grid-3">
+            <!-- Coluna 1: Perfis Didáticos -->
+            <div class="card">
+                <h2>1. Selecionar Perfil</h2>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    Clique em um perfil para emitir a sessão com suas respectivas Claims:
+                </p>
+
+                <div id="listaUsuarios">
+                    <!-- Preenchido via JavaScript -->
+                </div>
+            </div>
+
+            <!-- Coluna 2: Teste de Políticas Declarativas -->
+            <div class="card">
+                <h2>2. Políticas Declarativas</h2>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    Dispare os endpoints para avaliar o resultado da autorização:
+                </p>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="chamarEndpoint('/api/documentos/painel-geral')">
+                        1. [Authorize] Painel Geral
+                        <small>Exige apenas estar autenticado.</small>
+                    </button>
+
+                    <button class="btn btn-primary" onclick="chamarEndpoint('/api/documentos/apenas-lideranca')">
+                        2. [Authorize(Roles)] Liderança
+                        <small>Apenas Administrador e Gerente.</small>
+                    </button>
+
+                    <button class="btn btn-success" onclick="chamarEndpoint('/api/documentos/modulo-financeiro')">
+                        3. [Policy] Módulo Financeiro
+                        <small>Exige Claim departamento = Financeiro.</small>
+                    </button>
+
+                    <button class="btn btn-warning" onclick="chamarEndpoint('/api/documentos/assinatura-contratos')">
+                        4. [Policy] Maioridade Legal
+                        <small>Handler IdadeMinimaHandler (Idade &gt;= 18).</small>
+                    </button>
+
+                    <button class="btn btn-danger" onclick="chamarEndpoint('/api/documentos/aprovacoes-vultosas')">
+                        5. [Policy] Aprovador Sênior
+                        <small>Composta: Liderança + Financeiro + Exp &gt;= 5 anos.</small>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Coluna 3: Autorização de Recurso -->
+            <div class="card">
+                <h2>3. Autorização de Recurso</h2>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    Resource-Based: Usuário só pode alterar o próprio relatório (ou Administrador):
+                </p>
+                <div id="listaRelatorios" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <!-- Preenchido via JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Área de Resultados -->
+        <div class="result-area">
+            <div class="result-header">
+                <div>
+                    <strong>Operação:</strong> <span id="resEndpoint">Aguardando chamada...</span>
+                </div>
+                <div>
+                    <span id="resStatusBadge" class="status-badge" style="display: none;"></span>
+                </div>
+            </div>
+            <div style="margin-bottom: 0.5rem; color: #a1a1aa; font-size: 0.82rem;">
+                <strong>Resultado da Autorização:</strong> <span id="resResultado">-</span> |
+                <strong>Duração:</strong> <span id="resDuracao">-</span>
+            </div>
+            <pre><code id="resPayload">// O resultado da validação e as mensagens de autorização aparecerão aqui.</code></pre>
+        </div>
+
+        <div class="comparison-callout">
+            <strong>Diferencial do .NET 10:</strong>
+            No .NET moderno, as regras de autorização não ficam engessadas em atributos com nomes de papéis ou espalhadas em <code>if</code> manuais nos controllers.
+            Com <code>IAuthorizationRequirement</code> e <code>AuthorizationHandler</code>, a regra é tratada como um serviço puro, testável isoladamente e enriquecido com injeção de dependências no construtor.
+        </div>
+    </div>
+
+    <script>
+        let usuarioAtivoEmail = null;
+
+        async function carregarUsuariosDemo() {
+            const resposta = await fetch('/api/sessao/usuarios-demo');
+            const usuarios = await resposta.json();
+            const container = document.getElementById('listaUsuarios');
+            container.innerHTML = '';
+
+            usuarios.forEach(u => {
+                const card = document.createElement('div');
+                card.className = 'user-card' + (u.email === usuarioAtivoEmail ? ' active' : '');
+                card.onclick = () => selecionarUsuario(u.email);
+                card.innerHTML = `
+                    <div style="font-weight: 600; font-size: 0.88rem; color: var(--dark);">${u.nome}</div>
+                    <div style="font-size: 0.76rem; color: var(--text-muted);">
+                        ${u.perfil} | ${u.departamento} | ${u.idade} anos | Exp: ${u.anosExperiencia}a
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        async function selecionarUsuario(email) {
+            await fetch('/api/sessao/selecionar-usuario', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(email)
+            });
+
+            await atualizarStatus();
+            await carregarRelatorios();
+        }
+
+        async function deslogar() {
+            await fetch('/api/sessao/logout', { method: 'POST' });
+            await atualizarStatus();
+            await carregarRelatorios();
+        }
+
+        async function atualizarStatus() {
+            const resposta = await fetch('/api/sessao/usuario-ativo');
+            const dados = await resposta.json();
+            const label = document.getElementById('labelUsuarioAtivo');
+
+            if (dados && dados.autenticado) {
+                usuarioAtivoEmail = dados.claims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] || dados.nome;
+                label.textContent = `${dados.nome} (${dados.perfil} - Depto: ${dados.departamento}, Idade: ${dados.idade}, Exp: ${dados.anosExperiencia}a)`;
+                label.style.color = 'var(--modern-green)';
+            } else {
+                usuarioAtivoEmail = null;
+                label.textContent = 'Não autenticado (Anônimo)';
+                label.style.color = 'var(--danger)';
+            }
+
+            await carregarUsuariosDemo();
+        }
+
+        async function carregarRelatorios() {
+            const container = document.getElementById('listaRelatorios');
+            container.innerHTML = '<span style="font-size: 0.8rem; color: var(--text-muted);">Carregando relatórios...</span>';
+
+            try {
+                const res = await fetch('/api/documentos/relatorios');
+                if (!res.ok) {
+                    container.innerHTML = '<span style="font-size: 0.8rem; color: var(--danger);">Faça login para visualizar relatórios.</span>';
+                    return;
+                }
+                const lista = await res.json();
+                container.innerHTML = '';
+
+                lista.forEach(r => {
+                    const item = document.createElement('div');
+                    item.style.cssText = 'border: 1px solid var(--border); border-radius: 6px; padding: 0.55rem 0.75rem; background: #fafafa; font-size: 0.8rem;';
+                    item.innerHTML = `
+                        <div style="font-weight: 600; color: var(--dark);">${r.titulo}</div>
+                        <div style="color: var(--text-muted); font-size: 0.74rem;">Autor: ${r.autorNome} (${r.autorEmail})</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.35rem;">
+                            <span>Status: <strong>${r.status}</strong></span>
+                            <button class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.74rem;" onclick="editarRelatorio(${r.id}, 'Aprovado')">
+                                Atualizar Status
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            } catch {
+                container.innerHTML = '<span style="font-size: 0.8rem; color: var(--danger);">Erro ao carregar.</span>';
+            }
+        }
+
+        async function editarRelatorio(id, novoStatus) {
+            await executarChamada(`/api/documentos/relatorios/${id}/status`, 'PUT', novoStatus);
+            await carregarRelatorios();
+        }
+
+        async function chamarEndpoint(url) {
+            await executarChamada(url, 'GET', null);
+        }
+
+        async function executarChamada(url, metodo, corpo) {
+            const endpointEl = document.getElementById('resEndpoint');
+            const statusEl = document.getElementById('resStatusBadge');
+            const resultadoEl = document.getElementById('resResultado');
+            const duracaoEl = document.getElementById('resDuracao');
+            const payloadEl = document.getElementById('resPayload');
+
+            endpointEl.textContent = `${metodo} ${url}`;
+            payloadEl.textContent = 'Avaliando políticas de autorização...';
+
+            const options = {
+                method: metodo,
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            };
+
+            if (corpo) {
+                options.body = JSON.stringify(corpo);
+            }
+
+            const inicio = performance.now();
+
+            try {
+                const resposta = await fetch(url, options);
+                const fim = performance.now();
+
+                duracaoEl.textContent = `${Math.round(fim - inicio)} ms`;
+                statusEl.style.display = 'inline-block';
+                statusEl.textContent = `${resposta.status} ${resposta.statusText}`;
+                statusEl.className = 'status-badge status-' + resposta.status;
+
+                if (resposta.status === 200 || resposta.status === 201) {
+                    resultadoEl.textContent = 'Autorização Concedida (200 OK)';
+                    resultadoEl.style.color = 'var(--modern-green)';
+                } else if (resposta.status === 403) {
+                    resultadoEl.textContent = 'Acesso Negado (403 Forbidden) - Requisito da política violado';
+                    resultadoEl.style.color = 'var(--danger)';
+                } else if (resposta.status === 401) {
+                    resultadoEl.textContent = 'Não Autenticado (401 Unauthorized)';
+                    resultadoEl.style.color = 'var(--warning)';
+                } else {
+                    resultadoEl.textContent = `Status HTTP ${resposta.status}`;
+                    resultadoEl.style.color = 'var(--text-muted)';
+                }
+
+                const texto = await resposta.text();
+                try {
+                    const json = JSON.parse(texto);
+                    payloadEl.textContent = JSON.stringify(json, null, 2);
+                } catch {
+                    payloadEl.textContent = texto || '(Corpo vazio)';
+                }
+            } catch (err) {
+                const fim = performance.now();
+                duracaoEl.textContent = `${Math.round(fim - inicio)} ms`;
+                statusEl.style.display = 'inline-block';
+                statusEl.textContent = 'Erro';
+                statusEl.className = 'status-badge status-500';
+                payloadEl.textContent = err.toString();
+            }
+        }
+
+        window.addEventListener('load', async () => {
+            await atualizarStatus();
+            await carregarRelatorios();
+        });
+    </script>
+</body>
+</html>

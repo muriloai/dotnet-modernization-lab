@@ -1,0 +1,41 @@
+@model IEnumerable<AuthorizationPoliciesDemo.Models.UsuarioSessao>
+
+@{
+    ViewBag.Title = "Selecionar Perfil de Demonstração";
+}
+
+<div style="max-width: 650px; margin: 0 auto;">
+    <div style="margin-bottom: 1.5rem; text-align: center;">
+        <h2>Selecionar Perfil de Teste</h2>
+        <p class="subtitle">
+            Escolha um dos perfis abaixo para gerar o ticket do <code>FormsAuthentication</code> com seus atributos gravados no <code>UserData</code>:
+        </p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+        @foreach (var usuario in Model)
+        {
+            <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h3 style="margin-bottom: 0.25rem;">@usuario.Nome</h3>
+                    <div style="font-size: 0.82rem; color: var(--text-muted);">
+                        <strong>Papel:</strong> @usuario.Perfil |
+                        <strong>Depto:</strong> @usuario.Departamento |
+                        <strong>Idade:</strong> @usuario.Idade anos |
+                        <strong>Exp:</strong> @usuario.AnosExperiencia anos
+                    </div>
+                </div>
+                <div>
+                    @using (Html.BeginForm("Autenticar", "Conta", FormMethod.Post))
+                    {
+                        @Html.AntiForgeryToken()
+                        @Html.Hidden("email", usuario.Email)
+                        <button type="submit" class="btn btn-primary">
+                            Assumir Perfil
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

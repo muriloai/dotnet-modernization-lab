@@ -1,0 +1,22 @@
+@{
+    ViewBag.Title = "Acesso Autorizado";
+}
+
+<div class="card" style="max-width: 650px; margin: 2rem auto;">
+    <div style="background-color: #d1e7dd; color: #0f5132; padding: 1rem 1.25rem; border-radius: 6px; margin-bottom: 1.25rem; border: 1px solid #badbcc;">
+        <h3 style="margin-bottom: 0.25rem; color: #0f5132;">Autorização Concedida!</h3>
+        <p style="font-size: 0.92rem; margin-top: 0.25rem;">
+            @ViewBag.Mensagem
+        </p>
+    </div>
+
+    <p style="font-size: 0.88rem; color: var(--text-muted);">
+        A requisição foi aceita pelos filtros de autorização do ASP.NET clássico para o usuário <strong>@User.Identity.Name</strong>.
+    </p>
+
+    <div style="margin-top: 1.5rem;">
+        <a href="@Url.Action("Index", "Documentos")" class="btn btn-secondary" style="text-decoration: none;">
+            Voltar ao Painel
+        </a>
+    </div>
+</div>
