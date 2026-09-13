@@ -1,0 +1,68 @@
+@{
+    ViewBag.Title = "Lab 03: Injeção de Dependências (.NET Framework 4.8.1)";
+    var clientes = ViewBag.Clientes as System.Collections.Generic.IReadOnlyList<DependencyInjectionDemo.Services.ClienteModel>;
+}
+
+<span class="badge badge-legacy">Ambiente Legado: .NET Framework 4.8.1</span>
+<h1>Lab 03: Injeção de Dependências no ASP.NET MVC 5</h1>
+<p class="subtitle">Demonstração de IDependencyResolver customizado, injeção por construtor e o anti-pattern Service Locator.</p>
+
+<div class="grid">
+    <div class="card">
+        <h2>Ciclos de Vida: Transient (Simulado)</h2>
+        <p style="font-size: 0.85rem; color: #6c757d; margin-bottom: 0.75rem;">Cada resolução cria uma nova instância. IDs diferentes comprovam instâncias distintas.</p>
+        <ul class="feature-list">
+            <li><span>Injeção Construtor:</span> <span class="tag" style="font-size: 0.8rem;">@ViewBag.Transient1Id</span></li>
+            <li><span>Service Locator:</span> <span class="tag" style="font-size: 0.8rem;">@ViewBag.Transient2Id</span></li>
+            <li><span>São iguais?</span> <strong>@(ViewBag.TransientIguais ? "Sim" : "Não (Correto)")</strong></li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <h2>Ciclos de Vida: Singleton (Simulado)</h2>
+        <p style="font-size: 0.85rem; color: #6c757d; margin-bottom: 0.75rem;">A mesma instância registrada no container é devolvida em todas as requisições.</p>
+        <ul class="feature-list">
+            <li><span>Injeção Construtor:</span> <span class="tag" style="font-size: 0.8rem;">@ViewBag.Singleton1Id</span></li>
+            <li><span>Service Locator:</span> <span class="tag" style="font-size: 0.8rem;">@ViewBag.Singleton2Id</span></li>
+            <li><span>São iguais?</span> <strong>@(ViewBag.SingletonIguais ? "Sim (Correto)" : "Não")</strong></li>
+        </ul>
+    </div>
+
+    <div class="card" style="grid-column: 1 / -1;">
+        <h2>Serviço de Negócio Injetado (IClienteService)</h2>
+        <p style="font-size: 0.9rem; color: #495057; margin-bottom: 0.5rem;">Canal de notificação ativo: <strong>@ViewBag.CanalNotificacao</strong></p>
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+            <thead>
+                <tr style="background: #f8f9fa; text-align: left;">
+                    <th style="padding: 0.5rem; border: 1px solid #dee2e6;">Id</th>
+                    <th style="padding: 0.5rem; border: 1px solid #dee2e6;">Nome</th>
+                    <th style="padding: 0.5rem; border: 1px solid #dee2e6;">E-mail</th>
+                    <th style="padding: 0.5rem; border: 1px solid #dee2e6;">Categoria</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (clientes != null)
+                {
+                    foreach (var c in clientes)
+                    {
+                        <tr>
+                            <td style="padding: 0.5rem; border: 1px solid #dee2e6;">@c.Id</td>
+                            <td style="padding: 0.5rem; border: 1px solid #dee2e6;">@c.Nome</td>
+                            <td style="padding: 0.5rem; border: 1px solid #dee2e6;">@c.Email</td>
+                            <td style="padding: 0.5rem; border: 1px solid #dee2e6;">@c.Categoria</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 1.5rem;">
+    <h2>Limitações do Legado em Relação a Injeção de Dependências</h2>
+    <ul style="padding-left: 1.25rem; font-size: 0.95rem; line-height: 1.8;">
+        <li><strong>Sem container embutido:</strong> Obrigava a escolher e gerenciar pacotes externos (Unity, Autofac, Ninject).</li>
+        <li><strong>Dois resolvers no mesmo projeto:</strong> Se você usasse MVC 5 e Web API 2 juntos, precisava de <code>System.Web.Mvc.IDependencyResolver</code> e <code>System.Web.Http.Dependencies.IDependencyResolver</code>.</li>
+        <li><strong>Tentação do Service Locator:</strong> A presença de <code>DependencyResolver.Current.GetService&lt;T&gt;()</code> estimulava código acoplado e de difícil teste.</li>
+    </ul>
+</div>

@@ -29,12 +29,13 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 
 ## Módulos e Conceitos do Laboratório
 
-### Módulo A: Fundamentos da Plataforma
+### Fundamentos da Plataforma
 
-| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        | Status    |
-| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------- | --------- |
-| [01](concepts/01-project-structure/README.md) | Estrutura de Projeto e Inicialização | MSBuild clássico XML, `Global.asax.cs`, IIS                   | SDK-style csproj, `Program.cs` com Top-Level, Kestrel                   | Concluído |
-| [02](concepts/02-configuration/README.md)     | Configuração e Options Pattern       | `ConfigurationManager`, XML `Web.config`, seções customizadas | `IConfiguration`, JSON hierárquico, Options Pattern e `IOptionsMonitor` | Concluído |
+| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        | Status       |
+| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------ |
+| [01](concepts/01-project-structure/README.md) | Estrutura de Projeto e Inicialização | MSBuild clássico XML, `Global.asax.cs`, IIS                   | SDK-style csproj, `Program.cs` com Top-Level, Kestrel                   | Concluído    |
+| [02](concepts/02-configuration/README.md)     | Configuração e Options Pattern       | `ConfigurationManager`, XML `Web.config`, seções customizadas | `IConfiguration`, JSON hierárquico, Options Pattern e `IOptionsMonitor` | Concluído    |
+| [03](concepts/03-dependency-injection/README.md) | Injeção de Dependências             | Sem DI nativo, containers externos e Service Locator          | Container de injeção nativo, ciclos de vida e Keyed Services            | Concluído    |
 
 ---
 
