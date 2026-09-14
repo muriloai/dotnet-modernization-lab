@@ -1,0 +1,89 @@
+@{
+    ViewBag.Title = "Cache Legado no .NET Framework 4.8.1";
+}
+
+<header>
+    <span class="badge-legado">Legado - .NET Framework 4.8.1</span>
+    <h1 style="margin-top: 0.5rem;">System.Runtime.Caching.MemoryCache</h1>
+    <p style="color: var(--text-muted);">
+        Demonstracao de limitacoes do modelo legado: vulnerabilidade a Cache Stampede por falta de locking atomico e ausencia de invalidacao por Tags.
+    </p>
+</header>
+
+<div class="card">
+    <div class="card-header">Consulta com MemoryCache Clássico</div>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">
+        A primeira busca simula acesso lento ao banco. As seguintes buscam do cache local sem sincronizacao de tags.
+    </p>
+    <div>
+        <button onclick="buscarLegado('all')">Buscar Todos</button>
+        <button onclick="buscarLegado('hardware')">Hardware</button>
+        <button onclick="buscarLegado('software')">Software</button>
+    </div>
+    <div class="stat-box">
+        <div><strong>Origem:</strong> <span id="legado-origem">-</span></div>
+        <div><strong>Tempo:</strong> <span id="legado-tempo">-</span></div>
+        <div><strong>Total de Consultas ao Banco:</strong> <span id="legado-consultas">-</span></div>
+    </div>
+    <pre id="legado-json">Clique em um dos botoes para consultar...</pre>
+</div>
+
+<div class="card">
+    <div class="card-header">Simulacao de Cache Stampede (Sem Protecao)</div>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">
+        No .NET Framework, disparar multiplas requisicoes concorrentes simultaneas para a mesma chave faz com que varias executem a busca pesada no banco ao mesmo tempo.
+    </p>
+    <div>
+        <button class="danger" onclick="testarStampedeLegado(10)">Disparar 10 Concorrentes no Legado</button>
+    </div>
+    <div class="stat-box">
+        <div><strong>Total Requisicoes:</strong> <span id="stampede-reqs">-</span></div>
+        <div><strong>Execucoes no Banco (Stampede):</strong> <span id="stampede-banco" style="color: red; font-weight: bold;">-</span></div>
+        <div><strong>Tempo Total:</strong> <span id="stampede-tempo">-</span></div>
+    </div>
+    <pre id="stampede-log">Aguardando inicio do teste legado...</pre>
+</div>
+
+<div class="card">
+    <div class="card-header">Invalidacao Manual por Varredura de Chaves</div>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">
+        Como o MemoryCache nao suporta Tags, o desenvolvedor e forcado a iterar todo o dicionario de chaves em memoria (O(N)) para expirar uma categoria.
+    </p>
+    <div>
+        <button class="danger" onclick="invalidarPrefixo('legado:catalog:')">Varrer e Limpar Catalogo</button>
+    </div>
+    <div id="resultado-varredura" style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--accent-blue);"></div>
+</div>
+
+<script>
+    function buscarLegado(cat) {
+        fetch('/CacheLegado/ObterProdutos?categoria=' + cat)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('legado-origem').innerText = data.Origem;
+                document.getElementById('legado-tempo').innerText = data.TempoExecucaoMs + ' ms';
+                document.getElementById('legado-consultas').innerText = data.ContadorConsultasBanco;
+                document.getElementById('legado-json').innerText = JSON.stringify(data.Dados, null, 2);
+            });
+    }
+
+    function testarStampedeLegado(count) {
+        document.getElementById('stampede-log').innerText = 'Executando ' + count + ' requisicoes simultaneas...';
+        fetch('/CacheLegado/SimularCacheStampede?count=' + count)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('stampede-reqs').innerText = data.TotalRequisicoes;
+                document.getElementById('stampede-banco').innerText = data.ExecucoesSemProtecao + ' vezes!';
+                document.getElementById('stampede-tempo').innerText = data.TempoTotalMs + ' ms';
+                document.getElementById('stampede-log').innerText = data.Diagnostico;
+            });
+    }
+
+    function invalidarPrefixo(prefixo) {
+        fetch('/CacheLegado/InvalidarPorPrefixo?prefixo=' + encodeURIComponent(prefixo), { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('resultado-varredura').innerText = data.Mensagem + ' (' + data.TempoMs + ' ms)';
+            });
+    }
+</script>

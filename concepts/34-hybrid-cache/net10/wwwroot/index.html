@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conceito 34: HybridCache no .NET 10</title>
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="badge">Moderno - .NET 10</span>
+      <h1>Microsoft.Extensions.Caching.Hybrid</h1>
+      <p class="subtitle">
+        Cache em duas camadas (L1 em memoria e L2 distribuido), bloqueio concorrente atomico contra Cache Stampede e invalidacao declarativa por Tags.
+      </p>
+    </header>
+
+    <div class="grid">
+      <!-- Painel 1: Consulta de Catalogo -->
+      <div class="card">
+        <div class="card-title">
+          <span>Consulta com Cache Hibrido</span>
+        </div>
+        <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+          Consulte o catalogo. A primeira consulta simula acesso lento ao banco (200ms). As seguintes retornam instantaneamente do cache local L1.
+        </p>
+        <div class="btn-group">
+          <button onclick="buscarProdutos('all')">Todos</button>
+          <button class="secondary" onclick="buscarProdutos('hardware')">Hardware</button>
+          <button class="secondary" onclick="buscarProdutos('perifericos')">Perifericos</button>
+          <button class="secondary" onclick="buscarProdutos('software')">Software</button>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-row">
+            <span class="stat-label">Origem do Dado:</span>
+            <span id="origem-dado" class="stat-value">-</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Tempo de Resposta:</span>
+            <span id="tempo-resposta" class="stat-value">-</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Total de Consultas ao Banco:</span>
+            <span id="consultas-banco" class="stat-value">-</span>
+          </div>
+        </div>
+
+        <h4 style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Resposta JSON:</h4>
+        <pre id="dados-resultado">Clique em um dos botoes acima para consultar...</pre>
+      </div>
+
+      <!-- Painel 2: Prevencao de Cache Stampede -->
+      <div class="card">
+        <div class="card-title">
+          <span>Teste de Cache Stampede</span>
+        </div>
+        <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+          Dispare 10 requisicoes concorrentes simultaneas para uma chave nova ausente no cache. O HybridCache executa a factory exatamente 1 vez!
+        </p>
+        <div class="btn-group">
+          <button class="warning" onclick="testarStampede(10)">Disparar 10 Concorrentes</button>
+          <button class="warning" onclick="testarStampede(25)">Disparar 25 Concorrentes</button>
+        </div>
+
+        <div class="stat-box">
+          <div class="stat-row">
+            <span class="stat-label">Requisicoes Concorrentes:</span>
+            <span id="stampede-reqs" class="stat-value">-</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Execucoes da Factory:</span>
+            <span id="stampede-factory" class="stat-value hit">-</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Tempo Total Concorrente:</span>
+            <span id="stampede-tempo" class="stat-value">-</span>
+          </div>
+        </div>
+
+        <h4 style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Diagnostico de Protecao:</h4>
+        <pre id="stampede-resultado">Aguardando inicio do teste de concorrencia...</pre>
+      </div>
+    </div>
+
+    <!-- Painel 3: Invalidacao por Tags -->
+    <div class="card" style="margin-bottom: 2rem;">
+      <div class="card-title">
+        <span>Invalidacao por Tags (Eviction Seletiva)</span>
+      </div>
+      <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+        No .NET Framework, invalidar todos os itens de uma categoria exigia varrer chaves manualmente no MemoryCache. No .NET 10, basta chamar RemoveByTagAsync("category:x")!
+      </p>
+      <div class="btn-group">
+        <button class="danger" onclick="invalidarTag('category:hardware')">Invalidar Tag: Hardware</button>
+        <button class="danger" onclick="invalidarTag('category:perifericos')">Invalidar Tag: Perifericos</button>
+        <button class="danger" onclick="invalidarTag('category:software')">Invalidar Tag: Software</button>
+        <button class="danger" onclick="invalidarTag('products')">Invalidar Tag Global: Products</button>
+      </div>
+      <div id="status-tag" style="font-size: 0.9rem; color: var(--accent-success); margin-top: 0.5rem;"></div>
+    </div>
+
+    <!-- Comparativo Tecnico -->
+    <div class="card">
+      <div class="card-title">
+        <span>Diferencas Tecnicas: .NET Framework 4.8.1 vs .NET 10</span>
+      </div>
+      <table class="table-comparison">
+        <thead>
+          <tr>
+            <th>Caracteristica</th>
+            <th>.NET Framework 4.8.1 (Legado)</th>
+            <th>.NET 10 (Moderno)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Arquitetura de Cache</td>
+            <td>Isolada (System.Runtime.Caching.MemoryCache ou HttpContext.Cache). Sem integracao nativa com cache distribuido.</td>
+            <td>Hibrida nativa (L1 in-memory + L2 distribuido como Redis ou Garnet) sob a mesma abstracao.</td>
+          </tr>
+          <tr>
+            <td>Cache Stampede (Thundering Herd)</td>
+            <td>Nao protegido por padrao. Exige locks manuais (ReaderWriterLockSlim ou SemaphoreSlim), propensos a deadlocks.</td>
+            <td>Protegido nativamente por lock por chave (keyed lock). Apenas uma factory e executada para concorrencias.</td>
+          </tr>
+          <tr>
+            <td>Invalidacao em Lote</td>
+            <td>Inexistente. Desenvolvedores precisavam iterar dicionarios de chaves ou guardar colecoes em memoria.</td>
+            <td>Nativa via Tags (RemoveByTagAsync). Invalida centenas de entradas correlatas em uma unica operacao.</td>
+          </tr>
+          <tr>
+            <td>Serializacao</td>
+            <td>BinaryFormatter (obsoleto e inseguro) ou Newtonsoft.Json manual com alto consumo de memoria.</td>
+            <td>Otimizada via System.Text.Json ou serializadores binarios configuraveis direto na camada L2.</td>
+          </tr>
+          <tr>
+            <td>Alocacao e Performance</td>
+            <td>Alocacoes repetidas de delegados e objetos intermediarios de cache.</td>
+            <td>Zero alocacao para Cache Hits na camada L1 e reaproveitamento de buffers via ArrayPool.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    async function buscarProdutos(categoria) {
+      try {
+        const res = await fetch(`/api/products?categoria=${categoria}`);
+        const data = await res.json();
+
+        document.getElementById('origem-dado').textContent = data.origem;
+        document.getElementById('origem-dado').className = 'stat-value ' + (data.origem.includes('Hit') ? 'hit' : 'miss');
+        document.getElementById('tempo-resposta').textContent = data.tempoExecucaoMs + ' ms';
+        document.getElementById('consultas-banco').textContent = data.contadorConsultasBanco;
+        document.getElementById('dados-resultado').textContent = JSON.stringify(data.dados, null, 2);
+      } catch (err) {
+        document.getElementById('dados-resultado').textContent = 'Erro ao consultar: ' + err.message;
+      }
+    }
+
+    async function testarStampede(count) {
+      document.getElementById('stampede-resultado').textContent = 'Disparando ' + count + ' requisicoes simultaneas concorrentes...';
+      try {
+        const res = await fetch(`/api/cache/stampede-test?count=${count}`);
+        const data = await res.json();
+
+        document.getElementById('stampede-reqs').textContent = data.totalRequisicoes;
+        document.getElementById('stampede-factory').textContent = data.execucoesFactory + ' vez';
+        document.getElementById('stampede-tempo').textContent = data.tempoTotalMs + ' ms';
+        document.getElementById('stampede-resultado').textContent = data.diagnostico;
+      } catch (err) {
+        document.getElementById('stampede-resultado').textContent = 'Erro no teste: ' + err.message;
+      }
+    }
+
+    async function invalidarTag(tag) {
+      try {
+        const res = await fetch(`/api/cache/invalidate-tag?tag=${encodeURIComponent(tag)}`, { method: 'POST' });
+        const data = await res.json();
+        document.getElementById('status-tag').textContent = data.mensagem + ' (' + data.tempoMs + ' ms)';
+      } catch (err) {
+        document.getElementById('status-tag').textContent = 'Erro ao invalidar: ' + err.message;
+      }
+    }
+  </script>
+</body>
+</html>
