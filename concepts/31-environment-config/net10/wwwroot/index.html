@@ -1,0 +1,116 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conceito 31 - Ambientes e Feature Flags (.NET 10)</title>
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Ambientes e Feature Flags</h1>
+      <p class="subtitle">Gerenciamento dinâmico com IWebHostEnvironment e Microsoft.FeatureManagement no .NET 10</p>
+    </header>
+
+    <!-- Cartao de Ambiente -->
+    <div class="card">
+      <h2>Ambiente de Execucao Atual</h2>
+      <div>
+        <span id="badge-ambiente" class="env-badge env-dev">Carregando...</span>
+      </div>
+      <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.5rem;" id="texto-config">
+        Fonte de configuracao ativa: -
+      </p>
+    </div>
+
+    <!-- Gestao de Feature Flags -->
+    <div class="card">
+      <h2>Feature Flags (Alternancia em Tempo Real sem Reciclagem)</h2>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+        Alterne as chaves abaixo para testar o comportamento instantâneo da aplicação sem nenhum reinício de servidor.
+      </p>
+
+      <div id="lista-flags" class="flags-list">
+        <div style="text-align: center; color: var(--text-secondary); padding: 1rem;">Carregando feature flags...</div>
+      </div>
+    </div>
+
+    <!-- Simulador de Checkout -->
+    <div class="card">
+      <h2>Simulador de Requisicao com Feature Gate</h2>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+        Dispare uma chamada para <code>POST /api/checkout/processar</code> e observe como o motor se adapta instantaneamente ao estado das flags.
+      </p>
+
+      <button class="btn" onclick="executarCheckout()">Processar Checkout via API</button>
+
+      <div class="result-box" id="resultado-checkout">
+        // Clique no botao acima para ver o retorno em tempo real.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function carregarAmbiente() {
+      try {
+        const res = await fetch('/api/featuremanager/ambiente');
+        if (res.ok) {
+          const data = await res.json();
+          const badge = document.getElementById('badge-ambiente');
+          badge.innerText = `Ambiente: ${data.ambienteNome}`;
+          badge.className = data.isProduction ? 'env-badge env-prod' : 'env-badge env-dev';
+          document.getElementById('texto-config').innerText = `Fonte de configuracao ativa: ${data.ambienteConfig}`;
+
+          renderizarFlags(data.features);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderizarFlags(features) {
+      const container = document.getElementById('lista-flags');
+      container.innerHTML = features.map(f => `
+        <div class="flag-item">
+          <div class="flag-info">
+            <h3>${f.nome}</h3>
+            <p>${f.descricao}</p>
+          </div>
+          <div>
+            <label class="switch">
+              <input type="checkbox" ${f.ativa ? 'checked' : ''} onchange="alternarFlag('${f.nome}', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function alternarFlag(nome, habilitado) {
+      try {
+        await fetch('/api/featuremanager/toggle', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ featureName: nome, enabled: habilitado })
+        });
+        carregarAmbiente();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function executarCheckout() {
+      try {
+        const res = await fetch('/api/checkout/processar', { method: 'POST' });
+        const data = await res.json();
+        document.getElementById('resultado-checkout').innerText = JSON.stringify(data, null, 2);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    carregarAmbiente();
+  </script>
+</body>
+</html>

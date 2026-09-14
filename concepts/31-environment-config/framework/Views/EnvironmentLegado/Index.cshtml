@@ -1,0 +1,62 @@
+﻿@model EnvironmentDemo.Models.EnvironmentLegadoDto
+@{
+    ViewBag.Title = "Ambientes e Flags Legado";
+}
+
+<header>
+    <h1>Ambientes e Flags no .NET Framework 4.8.1</h1>
+    <p class="subtitle">Demonstracao com ConfigurationManager.AppSettings e risco de reciclagem do AppPool</p>
+</header>
+
+<div class="card">
+    <h2>Ambiente Atual do IIS</h2>
+    <p style="font-size: 1.1rem; font-weight: 700; color: var(--accent-blue);">@Model.NomeAmbiente</p>
+    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">Arquivo de Origem: @Model.ArquivoFonte</p>
+</div>
+
+<div class="card">
+    <h2>Feature Flags no Web.config</h2>
+    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+        No .NET Framework, qualquer edicao nestas chaves no Web.config forca o IIS a reciclar o processo w3wp.exe imediatamente.
+    </p>
+
+    <div class="flags-list">
+        @foreach (var f in Model.Features)
+        {
+            <div class="flag-item">
+                <div>
+                    <strong style="color: #fff;">@f.Chave</strong>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">@f.Descricao</div>
+                </div>
+                <div>
+                    @if (f.Ativa)
+                    {
+                        <span class="badge badge-ativo">Ativa (true)</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-inativo">Inativa (false)</span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <h2>Simular Requisicao Condicional</h2>
+    <button class="btn" onclick="executarCheckout()">Testar Checkout Legado</button>
+    <div class="result-box" id="resultado-checkout">
+        // Clique no botao acima para ver o resultado da requisicao.
+    </div>
+</div>
+
+<script>
+    function executarCheckout() {
+        fetch('@Url.Action("ProcessarCheckout", "EnvironmentLegado")', { method: 'POST' })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                document.getElementById('resultado-checkout').innerText = JSON.stringify(data, null, 2);
+            });
+    }
+</script>
