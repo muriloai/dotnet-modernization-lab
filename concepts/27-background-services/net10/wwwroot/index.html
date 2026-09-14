@@ -1,0 +1,170 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conceito 27 - Background Services e Hosted Services (.NET 10)</title>
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Background Services e Hosted Services</h1>
+      <p class="subtitle">Demonstracao com IHostedService, BackgroundService, System.Threading.Channels e PeriodicTimer no .NET 10</p>
+    </header>
+
+    <div class="grid">
+      <!-- Painel de Metricas -->
+      <div class="card">
+        <h2>Metricas do Host e Workers</h2>
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <div class="metric-val" id="metric-enfileiradas">0</div>
+            <div class="metric-label">Enfileiradas</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-val" id="metric-processando">0</div>
+            <div class="metric-label">Em Execucao</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-val" id="metric-concluidas">0</div>
+            <div class="metric-label">Concluidas</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+          <div style="display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 0.5rem;">
+            <span style="color: var(--text-secondary);">Ticks do PeriodicTimer:</span>
+            <span id="metric-ticks" style="font-weight: 700; color: var(--accent-cyan);">0</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 0.5rem;">
+            <span style="color: var(--text-secondary);">Ultimo Tick:</span>
+            <span id="metric-ultimo-tick" style="font-size: 0.8rem; color: var(--text-secondary);">-</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.875rem;">
+            <span style="color: var(--text-secondary);">Memoria Alocada:</span>
+            <span id="metric-memoria" style="font-weight: 600; color: var(--accent-green);">0 MB</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Enfileirar Tarefa -->
+      <div class="card">
+        <h2>Enfileirar Nova Tarefa</h2>
+        <form id="form-tarefa">
+          <div class="form-group">
+            <label for="descricao">Descricao da Tarefa</label>
+            <input type="text" id="descricao" placeholder="Ex: Processar lote de notas fiscais" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Enviar para o Channel</button>
+        </form>
+
+        <div style="margin-top: 1rem;">
+          <label>Tarefas Rapidas</label>
+          <div class="quick-buttons">
+            <button class="btn-quick" onclick="preencher('Processamento de fechamento contabil mensal')">Fechamento Contabil</button>
+            <button class="btn-quick" onclick="preencher('Exportacao de relatorio analitico em PDF')">Exportacao PDF</button>
+            <button class="btn-quick" onclick="preencher('Sincronizacao de catalogo de produtos')">Sincronizar Catalogo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de Tarefas -->
+    <div class="card">
+      <h2>Tarefas Processadas pelo Worker</h2>
+      <div id="lista-tarefas" class="tasks-list">
+        <p style="color: var(--text-secondary); text-align: center; padding: 1rem;">Nenhuma tarefa enfileirada no momento.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function preencher(txt) {
+      document.getElementById('descricao').value = txt;
+    }
+
+    document.getElementById('form-tarefa').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('descricao');
+      const desc = input.value.trim();
+      if (!desc) return;
+
+      try {
+        const res = await fetch('/api/backgroundtasks/enfileirar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ descricao: desc })
+        });
+        if (res.ok) {
+          input.value = '';
+          atualizar();
+        }
+      } catch (err) {
+        console.error('Erro ao enfileirar tarefa:', err);
+      }
+    });
+
+    async function atualizar() {
+      try {
+        const [resMetricas, resTarefas] = await Promise.all([
+          fetch('/api/backgroundtasks/metricas'),
+          fetch('/api/backgroundtasks/tarefas')
+        ]);
+
+        if (resMetricas.ok) {
+          const m = await resMetricas.json();
+          document.getElementById('metric-enfileiradas').innerText = m.totalEnfileiradas;
+          document.getElementById('metric-processando').innerText = m.totalEmProcessamento;
+          document.getElementById('metric-concluidas').innerText = m.totalConcluidas;
+          document.getElementById('metric-ticks').innerText = m.totalTicksTimer;
+          document.getElementById('metric-ultimo-tick').innerText = new Date(m.ultimoTickTimer).toLocaleTimeString();
+          document.getElementById('metric-memoria').innerText = (m.memoriaAlocadaBytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        if (resTarefas.ok) {
+          const tarefas = await resTarefas.json();
+          renderizarTarefas(tarefas);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar dados:', err);
+      }
+    }
+
+    function renderizarTarefas(tarefas) {
+      const container = document.getElementById('lista-tarefas');
+      if (!tarefas || tarefas.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">Nenhuma tarefa enfileirada no momento.</p>';
+        return;
+      }
+
+      container.innerHTML = tarefas.map(t => {
+        let badgeClass = 'badge-pendente';
+        if (t.status === 'Em Processamento') badgeClass = 'badge-processando';
+        if (t.status === 'Concluido') badgeClass = 'badge-concluido';
+
+        const criado = new Date(t.criadoEm).toLocaleTimeString();
+
+        return `
+          <div class="task-item">
+            <div class="task-header">
+              <span class="task-title">${t.descricao}</span>
+              <span class="badge ${badgeClass}">${t.status}</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" style="width: ${t.progressoPercentual}%"></div>
+            </div>
+            <div class="task-footer">
+              <span>Progresso: ${t.progressoPercentual}%</span>
+              <span>${t.resultado ? t.resultado : 'Criado as ' + criado}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    atualizar();
+    setInterval(atualizar, 1000);
+  </script>
+</body>
+</html>

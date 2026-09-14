@@ -1,0 +1,126 @@
+﻿@{
+    ViewBag.Title = "Background Tasks Legado";
+}
+
+<header>
+    <h1>Background Tasks no ASP.NET MVC Legado</h1>
+    <p class="subtitle">Demonstracao com QueueBackgroundWorkItem e Timer do IIS no .NET Framework 4.8.1</p>
+</header>
+
+<div class="grid">
+    <div class="card">
+        <h2>Metricas do AppPool (Legado)</h2>
+        <div class="metrics-grid">
+            <div class="metric-box">
+                <div class="metric-val" id="metric-enfileiradas">0</div>
+                <div class="metric-label">Enfileiradas</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-val" id="metric-processando">0</div>
+                <div class="metric-label">Em Execucao</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-val" id="metric-concluidas">0</div>
+                <div class="metric-label">Concluidas</div>
+            </div>
+        </div>
+
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+            <div style="display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 0.5rem;">
+                <span style="color: var(--text-secondary);">Ticks do Timer Legado:</span>
+                <span id="metric-ticks" style="font-weight: 700; color: var(--accent-blue);">0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 0.5rem;">
+                <span style="color: var(--text-secondary);">Ultimo Tick:</span>
+                <span id="metric-ultimo-tick" style="font-size: 0.8rem; color: var(--text-secondary);">-</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.875rem;">
+                <span style="color: var(--text-secondary);">Memoria w3wp:</span>
+                <span id="metric-memoria" style="font-weight: 600; color: var(--accent-green);">0 MB</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Enfileirar Tarefa (QBWI)</h2>
+        <form id="form-tarefa">
+            <div class="form-group">
+                <label for="descricao">Descricao da Tarefa</label>
+                <input type="text" id="descricao" placeholder="Ex: Processar lote de notas fiscais" required />
+            </div>
+            <button type="submit" class="btn">QueueBackgroundWorkItem</button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Tarefas Processadas</h2>
+    <div id="lista-tarefas" class="tasks-list">
+        <p style="color: var(--text-secondary); text-align: center; padding: 1rem;">Nenhuma tarefa enfileirada no momento.</p>
+    </div>
+</div>
+
+<script>
+    document.getElementById('form-tarefa').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var input = document.getElementById('descricao');
+        var desc = input.value.trim();
+        if (!desc) return;
+
+        var formData = new URLSearchParams();
+        formData.append('descricao', desc);
+
+        fetch('@Url.Action("Enfileirar", "BackgroundTasksLegado")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        }).then(function(res) {
+            if (res.ok) {
+                input.value = '';
+                atualizar();
+            }
+        });
+    });
+
+    function atualizar() {
+        fetch('@Url.Action("ObterStatus", "BackgroundTasksLegado")')
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                document.getElementById('metric-enfileiradas').innerText = data.totalEnfileiradas;
+                document.getElementById('metric-processando').innerText = data.totalEmProcessamento;
+                document.getElementById('metric-concluidas').innerText = data.totalConcluidas;
+                document.getElementById('metric-ticks').innerText = data.ticksTimer;
+                document.getElementById('metric-ultimo-tick').innerText = data.ultimoTick;
+                document.getElementById('metric-memoria').innerText = (data.memoriaBytes / (1024 * 1024)).toFixed(2) + ' MB';
+
+                var container = document.getElementById('lista-tarefas');
+                if (!data.tarefas || data.tarefas.length === 0) {
+                    container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">Nenhuma tarefa enfileirada no momento.</p>';
+                    return;
+                }
+
+                container.innerHTML = data.tarefas.map(function(t) {
+                    var badgeClass = 'badge-pendente';
+                    if (t.Status === 'Em Processamento') badgeClass = 'badge-processando';
+                    if (t.Status === 'Concluido') badgeClass = 'badge-concluido';
+
+                    return '<div class="task-item">' +
+                        '<div class="task-header">' +
+                            '<span class="task-title">' + t.Descricao + '</span>' +
+                            '<span class="badge ' + badgeClass + '">' + t.Status + '</span>' +
+                        '</div>' +
+                        '<div class="progress-bar-bg">' +
+                            '<div class="progress-bar-fill" style="width: ' + t.ProgressoPercentual + '%"></div>' +
+                        '</div>' +
+                        '<div class="task-footer">' +
+                            '<span>Progresso: ' + t.ProgressoPercentual + '%</span>' +
+                            '<span>' + (t.Resultado ? t.Resultado : '') + '</span>' +
+                        '</div>' +
+                    '</div>';
+                }).join('');
+            });
+    }
+
+    atualizar();
+    setInterval(atualizar, 1000);
+</script>

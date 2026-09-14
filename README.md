@@ -94,6 +94,7 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        |
 | --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | [26](concepts/26-solid-architecture/README.md) | Princípios SOLID e Arquitetura Limpa | God Controllers, new DbContext() direto, DependencyResolver (Service Locator) | Clean Architecture, separação em camadas (Domain/Application/Infra), DI nativa e SOLID |
+| [27](concepts/27-background-services/README.md) | Background Services e Hosted Services | HostingEnvironment.QueueBackgroundWorkItem, Timer do IIS e Windows Service separado | IHostedService, BackgroundService, PeriodicTimer, Channels e IHostApplicationLifetime |
 
 ---
 
