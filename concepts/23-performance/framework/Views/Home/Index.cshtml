@@ -1,0 +1,134 @@
+@using PerformanceDemo.Models
+@{
+    ViewBag.Title = "Conceito 23: Otimizações de Desempenho (Legado)";
+    ResultadoBenchmarkLegado resParsing = ViewBag.ResultadoParsing;
+    ResultadoBenchmarkLegado resBuffers = ViewBag.ResultadoBuffers;
+}
+
+<header>
+    <div class="header-title-row">
+        <div>
+            <h1>Conceito 23: Otimizações de Desempenho</h1>
+            <p class="subtitle">Laboratório comparativo: Alocações em Heap com Substring e novos byte[] no .NET Framework 4.8.1</p>
+        </div>
+        <span class="badge-dotnet">.NET Framework 4.8.1 (IIS Express - Porta 7301)</span>
+    </div>
+</header>
+
+<div class="grid">
+    <div class="card">
+        <h2>Parsing Tradicional com string.Substring</h2>
+        <p class="subtitle" style="margin-bottom: 1rem;">
+            No .NET Framework 4.8.1, o fatiamento de strings sempre instancia novos objetos na Heap gerenciada, elevando as pausas e coletas de lixo do Garbage Collector sob alto volume.
+        </p>
+
+        @using (Html.BeginForm("ExecutarBenchmarkParsing", "Home", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <div class="form-group">
+                <label for="linhas">Quantidade de Linhas de Log:</label>
+                <input type="number" id="linhas" name="linhas" class="form-control" value="@(ViewBag.LinhasInformadas ?? 50000)" min="5000" max="200000" step="5000" />
+            </div>
+            <button type="submit" class="btn-primary" style="width: 100%;">
+                Executar Parsing com Substring
+            </button>
+        }
+
+        @if (resParsing != null)
+        {
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--accent);">Resultados do Parsing:</h3>
+                
+                <div class="grid" style="margin-bottom: 0;">
+                    <div class="metric-box">
+                        <div class="metric-title">Tempo de Execução</div>
+                        <div class="metric-value">@resParsing.TempoMs ms</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-title">Coletas Gen 0</div>
+                        <div class="metric-value" style="color: var(--danger);">@resParsing.ColetasGen0</div>
+                    </div>
+                </div>
+
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.75rem;">
+                    Total processado: @resParsing.TotalProcessado.ToString("N0") linhas. Note que as coletas Gen 0 refletem a sobrecarga contínua de alocar substrings na Heap.
+                </p>
+            </div>
+        }
+    </div>
+
+    <div class="card">
+        <h2>Alocação Contínua de Buffers</h2>
+        <p class="subtitle" style="margin-bottom: 1rem;">
+            Sem ArrayPool nativo disponível de forma padronizada, cada operação de leitura ou streaming alocava um novo array (new byte[]), gerando fragmentação quando os buffers excediam 85 KB.
+        </p>
+
+        @using (Html.BeginForm("ExecutarBenchmarkBuffers", "Home", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <div class="form-group">
+                <label for="iteracoes">Operações:</label>
+                <input type="number" id="iteracoes" name="iteracoes" class="form-control" value="@(ViewBag.IteracoesInformadas ?? 15000)" min="1000" max="50000" step="1000" />
+            </div>
+            <div class="form-group">
+                <label for="tamanhoKb">Tamanho do Buffer (KB):</label>
+                <input type="number" id="tamanhoKb" name="tamanhoKb" class="form-control" value="@(ViewBag.TamanhoKbInformado ?? 64)" min="4" max="256" step="8" />
+            </div>
+            <button type="submit" class="btn-primary" style="width: 100%;">
+                Executar Alocações de Buffers
+            </button>
+        }
+
+        @if (resBuffers != null)
+        {
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--accent);">Resultados de Buffers:</h3>
+                
+                <div class="grid" style="margin-bottom: 0;">
+                    <div class="metric-box">
+                        <div class="metric-title">Tempo de Execução</div>
+                        <div class="metric-value">@resBuffers.TempoMs ms</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-title">Coletas Gen 0</div>
+                        <div class="metric-value" style="color: var(--danger);">@resBuffers.ColetasGen0</div>
+                    </div>
+                </div>
+
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.75rem;">
+                    Total de iterações: @resBuffers.TotalProcessado.ToString("N0") buffers alocados na memória gerenciada sem mecanismo de reaproveitamento.
+                </p>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <h2>Limitações de Desempenho no .NET Framework 4.8.1</h2>
+    <table class="comparison-table">
+        <thead>
+            <tr>
+                <th>Característica</th>
+                <th>Comportamento no .NET Framework 4.8.1</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Fatiamento de Strings</strong></td>
+                <td>string.Substring e string.Split instanciam novos objetos imutáveis na Heap gerenciada.</td>
+            </tr>
+            <tr>
+                <td><strong>Reutilização de Arrays</strong></td>
+                <td>Inexistência de ArrayPool na BCL padrão, forçando novas alocações contínuas de byte[] em sockets e arquivos.</td>
+            </tr>
+            <tr>
+                <td><strong>Large Object Heap (LOH)</strong></td>
+                <td>Arrays maiores que 85 KB entram na LOH sem compactação automática, provocando fragmentação crônica sob concorrência.</td>
+            </tr>
+            <tr>
+                <td><strong>Tipos de Memória Seguros</strong></td>
+                <td>Ausência de Span e ReadOnlySpan. Operações diretas de memória exigiam blocos unsafe com ponteiros brutos.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>

@@ -80,6 +80,7 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | [21](concepts/21-json-serialization/README.md) | Serialização JSON                    | JavaScriptSerializer, Newtonsoft.Json (Json.NET) e reflexão pesada | System.Text.Json, Utf8JsonReader/Writer, Source Generators e streaming IAsyncEnumerable |
 | [22](concepts/22-caching/README.md)           | Estratégias de Cache                 | System.Web.Caching.Cache, OutputCache em MVC, MemoryCache estático e sem tags | IMemoryCache, IDistributedCache, OutputCache middleware com Tags e eviction seletiva |
+| [23](concepts/23-performance/README.md)       | Otimizações de Desempenho            | Alocações com Substring, boxing/unboxing, novos byte[] e GC pauses no Windows | Span<T>, ReadOnlySpan<T>, ArrayPool<T>, Zero-Allocation parsing e GC moderno |
 
 ---
 

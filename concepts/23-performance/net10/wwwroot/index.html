@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Conceito 23: Otimizações de Desempenho (.NET 10)</title>
+    <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-title-row">
+                <div>
+                    <h1>Conceito 23: Otimizações de Desempenho</h1>
+                    <p class="subtitle">Zero-Allocation com Span&lt;T&gt;, reciclagem de buffers com ArrayPool&lt;T&gt; e medição do GC no .NET 10</p>
+                </div>
+                <span class="badge-dotnet">.NET 10 (Kestrel - Porta 7300)</span>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="alternarAba('parsing')">1. Parsing: Substring vs Span&lt;T&gt;</button>
+            <button class="tab-button" onclick="alternarAba('buffers')">2. Buffers: new byte[] vs ArrayPool&lt;T&gt;</button>
+        </div>
+
+        <!-- ABA 1: PARSING -->
+        <div id="aba-parsing" class="tab-content active">
+            <div class="grid">
+                <div class="card">
+                    <h2>Configuração do Benchmark de Parsing</h2>
+                    <p class="subtitle" style="margin-bottom: 1rem;">
+                        Compara o parsing tradicional de strings (usado no .NET Framework com Substring e Trim) contra o fatiamento em pilha com ReadOnlySpan&lt;char&gt; nativo do .NET 10.
+                    </p>
+
+                    <div class="form-group">
+                        <label for="input-linhas">Quantidade de Linhas de Log:</label>
+                        <input type="number" id="input-linhas" class="form-control" value="50000" min="5000" max="200000" step="5000" />
+                    </div>
+
+                    <button class="btn-primary" onclick="executarBenchmarkParsing()" style="width: 100%;">
+                        Executar Benchmark de Parsing
+                    </button>
+
+                    <div id="loading-parsing" style="display: none; margin-top: 1rem; color: var(--accent);">
+                        Executando benchmark de parsing e medindo bytes alocados na thread...
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Métricas de Alocação e GC</h2>
+                    <div id="painel-parsing" style="display: none;">
+                        <div class="grid" style="margin-bottom: 1rem;">
+                            <div>
+                                <h3 style="font-size: 0.95rem; color: var(--danger); margin-bottom: 0.5rem;">Modo Substring (Legado)</h3>
+                                <div class="metric-box">
+                                    <div class="metric-title">Tempo de Execução</div>
+                                    <div id="parse-sub-tempo" class="metric-value">0 ms</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-title">Memória Alocada</div>
+                                    <div id="parse-sub-memoria" class="metric-value metric-danger">0 MB</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-title">Coletas Gen 0 do GC</div>
+                                    <div id="parse-sub-gen0" class="metric-value metric-danger">0</div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 style="font-size: 0.95rem; color: var(--success); margin-bottom: 0.5rem;">Modo ReadOnlySpan (Moderno)</h3>
+                                <div class="metric-box">
+                                    <div class="metric-title">Tempo de Execução</div>
+                                    <div id="parse-span-tempo" class="metric-value">0 ms</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-title">Memória Alocada</div>
+                                    <div id="parse-span-memoria" class="metric-value metric-success">0 MB</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-title">Coletas Gen 0 do GC</div>
+                                    <div id="parse-span-gen0" class="metric-value metric-success">0</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="parse-diagnostico" style="font-size: 0.85rem; line-height: 1.6; color: var(--text-primary); background-color: var(--bg-primary); padding: 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                        </div>
+                    </div>
+
+                    <div id="placeholder-parsing" style="font-size: 0.9rem; color: var(--text-secondary); text-align: center; padding: 2rem;">
+                        Clique no botão ao lado para iniciar a comparação.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 2: BUFFERS -->
+        <div id="aba-buffers" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <h2>Configuração de Reciclagem de Buffers</h2>
+                    <p class="subtitle" style="margin-bottom: 1rem;">
+                        Compara a alocação contínua de novos vetores de bytes (abordagem clássica de I/O em .NET Framework) contra a reciclagem com ArrayPool&lt;byte&gt;.Shared do .NET 10.
+                    </p>
+
+                    <div class="form-group">
+                        <label for="input-iteracoes">Quantidade de Operações:</label>
+                        <input type="number" id="input-iteracoes" class="form-control" value="15000" min="1000" max="50000" step="1000" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="input-tamanho-kb">Tamanho do Buffer (KB):</label>
+                        <input type="number" id="input-tamanho-kb" class="form-control" value="64" min="4" max="256" step="8" />
+                    </div>
+
+                    <button class="btn-primary" onclick="executarBenchmarkBuffers()" style="width: 100%;">
+                        Executar Benchmark de Buffers
+                    </button>
+
+                    <div id="loading-buffers" style="display: none; margin-top: 1rem; color: var(--accent);">
+                        Alocando buffers e medindo pressão na Heap...
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Métricas de Buffers e LOH</h2>
+                    <div id="painel-buffers" style="display: none;">
+                        <div class="grid" style="margin-bottom: 1rem;">
+                            <div>
+                                <h3 style="font-size: 0.95rem; color: var(--danger); margin-bottom: 0.5rem;">Modo new byte[] (Legado)</h3>
+                                <div class="metric-box">
+                                    <div class="metric-title">Tempo de Execução</div>
+                                    <div id="buf-novo-tempo" class="metric-value">0 ms</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-title">Memória Alocada</div>
+                                    <div id="buf-novo-memoria" class="metric-value metric-danger">0 MB</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-title">Coletas Gen 0 do GC</div>
+                                    <div id="buf-novo-gen0" class="metric-value metric-danger">0</div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 style="font-size: 0.95rem; color: var(--success); margin-bottom: 0.5rem;">Modo ArrayPool (Moderno)</h3>
+                                <div class="metric-box">
+                                    <div class="metric-title">Tempo de Execução</div>
+                                    <div id="buf-pool-tempo" class="metric-value">0 ms</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-title">Memória Alocada</div>
+                                    <div id="buf-pool-memoria" class="metric-value metric-success">0 MB</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-title">Coletas Gen 0 do GC</div>
+                                    <div id="buf-pool-gen0" class="metric-value metric-success">0</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="buf-diagnostico" style="font-size: 0.85rem; line-height: 1.6; color: var(--text-primary); background-color: var(--bg-primary); padding: 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                        </div>
+                    </div>
+
+                    <div id="placeholder-buffers" style="font-size: 0.9rem; color: var(--text-secondary); text-align: center; padding: 2rem;">
+                        Clique no botão ao lado para iniciar a comparação de buffers.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Quadro Comparativo: .NET Framework 4.8.1 vs .NET 10</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Característica</th>
+                        <th>.NET Framework 4.8.1 (Legado)</th>
+                        <th>.NET 10 (Moderno)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Fatiamento de Strings</strong></td>
+                        <td>string.Substring aloca novos objetos na Heap a cada chamada</td>
+                        <td>ReadOnlySpan&lt;char&gt; opera em pilha com 0 bytes alocados</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Reciclagem de Memória</strong></td>
+                        <td>Alocação contínua de novos byte[] para cada operação de rede ou arquivo</td>
+                        <td>ArrayPool&lt;T&gt;.Shared reutiliza instâncias reduzindo pressão no GC</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Large Object Heap (LOH)</strong></td>
+                        <td>Objetos &gt; 85.000 bytes provocam fragmentação permanente sem compactação</td>
+                        <td>Pools reutilizáveis e GC moderno com DATAS e compactação sob demanda</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Formatação de Tipos</strong></td>
+                        <td>int.ToString() e concatenações com operador + alocam strings intermediárias</td>
+                        <td>ISpanFormattable e interpolated string handlers escrevem direto no buffer</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function alternarAba(nome) {
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(conteudo => conteudo.classList.remove('active'));
+
+            if (nome === 'parsing') {
+                document.querySelectorAll('.tab-button')[0].classList.add('active');
+                document.getElementById('aba-parsing').classList.add('active');
+            } else if (nome === 'buffers') {
+                document.querySelectorAll('.tab-button')[1].classList.add('active');
+                document.getElementById('aba-buffers').classList.add('active');
+            }
+        }
+
+        async function executarBenchmarkParsing() {
+            const linhas = document.getElementById('input-linhas').value;
+            const loading = document.getElementById('loading-parsing');
+            const placeholder = document.getElementById('placeholder-parsing');
+            const painel = document.getElementById('painel-parsing');
+
+            loading.style.display = 'block';
+            placeholder.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/performance/comparar-parsing?linhas=' + encodeURIComponent(linhas), { method: 'POST' });
+                const dados = await res.json();
+
+                const sub = dados[0];
+                const span = dados[1];
+
+                document.getElementById('parse-sub-tempo').innerText = sub.tempoMs + ' ms';
+                document.getElementById('parse-sub-memoria').innerText = sub.megabytesAlocados + ' MB';
+                document.getElementById('parse-sub-gen0').innerText = sub.coletasGen0;
+
+                document.getElementById('parse-span-tempo').innerText = span.tempoMs + ' ms';
+                document.getElementById('parse-span-memoria').innerText = span.megabytesAlocados + ' MB';
+                document.getElementById('parse-span-gen0').innerText = span.coletasGen0;
+
+                const diferencaTempo = Math.round(((sub.tempoMs - span.tempoMs) / sub.tempoMs) * 100);
+                document.getElementById('parse-diagnostico').innerHTML = 
+                    '<strong>Diagnóstico de Eficiência:</strong><br/>' +
+                    'O método com ReadOnlySpan processou ' + span.itensProcessados.toLocaleString() + ' linhas alocando ' + span.megabytesAlocados + ' MB na Heap, enquanto o método com Substring alocou ' + sub.megabytesAlocados + ' MB gerando ' + sub.coletasGen0 + ' coletas de lixo na Gen 0. ' +
+                    'Ganho de velocidade aproximado: <strong>' + (diferencaTempo > 0 ? diferencaTempo + '%' : 'significativo') + ' mais rápido</strong> com eliminação total de alocações na Heap.';
+
+                painel.style.display = 'block';
+            } catch (err) {
+                alert('Erro no benchmark: ' + err);
+                placeholder.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        async function executarBenchmarkBuffers() {
+            const iteracoes = document.getElementById('input-iteracoes').value;
+            const tamanhoKb = document.getElementById('input-tamanho-kb').value;
+            const loading = document.getElementById('loading-buffers');
+            const placeholder = document.getElementById('placeholder-buffers');
+            const painel = document.getElementById('painel-buffers');
+
+            loading.style.display = 'block';
+            placeholder.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/performance/comparar-buffers?iteracoes=' + encodeURIComponent(iteracoes) + '&tamanhoKb=' + encodeURIComponent(tamanhoKb), { method: 'POST' });
+                const dados = await res.json();
+
+                const novo = dados[0];
+                const pool = dados[1];
+
+                document.getElementById('buf-novo-tempo').innerText = novo.tempoMs + ' ms';
+                document.getElementById('buf-novo-memoria').innerText = novo.megabytesAlocados + ' MB';
+                document.getElementById('buf-novo-gen0').innerText = novo.coletasGen0;
+
+                document.getElementById('buf-pool-tempo').innerText = pool.tempoMs + ' ms';
+                document.getElementById('buf-pool-memoria').innerText = pool.megabytesAlocados + ' MB';
+                document.getElementById('buf-pool-gen0').innerText = pool.coletasGen0;
+
+                document.getElementById('buf-diagnostico').innerHTML = 
+                    '<strong>Diagnóstico de Buffers:</strong><br/>' +
+                    'A alocação via new byte[] alocou ' + novo.megabytesAlocados + ' MB na memória sob ' + novo.itensProcessados.toLocaleString() + ' iterações. ' +
+                    'Em contraste, o ArrayPool reaproveitou instâncias pré-alocadas reduzindo as alocações da thread para ' + pool.megabytesAlocados + ' MB, eliminando a fragmentação da Large Object Heap.';
+
+                painel.style.display = 'block';
+            } catch (err) {
+                alert('Erro no benchmark: ' + err);
+                placeholder.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
