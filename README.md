@@ -95,6 +95,7 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | [26](concepts/26-solid-architecture/README.md) | Princípios SOLID e Arquitetura Limpa | God Controllers, new DbContext() direto, DependencyResolver (Service Locator) | Clean Architecture, separação em camadas (Domain/Application/Infra), DI nativa e SOLID |
 | [27](concepts/27-background-services/README.md) | Background Services e Hosted Services | HostingEnvironment.QueueBackgroundWorkItem, Timer do IIS e Windows Service separado | IHostedService, BackgroundService, PeriodicTimer, Channels e IHostApplicationLifetime |
+| [28](concepts/28-mediator-cqrs/README.md)     | Mediator e CQRS                      | Fat Services monolíticos, acoplamento direto controller-serviço e consultas sem separação | CQRS, Commands e Queries segregados, Mediator com Pipeline Behaviors e Vertical Slices |
 
 ---
 

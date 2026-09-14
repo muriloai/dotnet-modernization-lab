@@ -1,0 +1,88 @@
+﻿@model List<PedidosCqrsDemo.Models.PedidoLegado>
+@{
+    ViewBag.Title = "Pedidos Monolitico (Legado)";
+}
+
+<header>
+    <h1>Pedidos com Servico Monolitico</h1>
+    <p class="subtitle">Demonstracao com IPedidoService e acoplamento direto no .NET Framework 4.8.1</p>
+</header>
+
+<div class="card">
+    <h2>Cadastrar Pedido (Servico Fat)</h2>
+    <form id="form-pedido">
+        <div class="form-group">
+            <label for="cliente">Cliente</label>
+            <input type="text" id="cliente" required />
+        </div>
+        <div class="form-group">
+            <label for="produto">Produto</label>
+            <input type="text" id="produto" required />
+        </div>
+        <div class="form-grid">
+            <div>
+                <label for="valor">Valor Unitario</label>
+                <input type="number" id="valor" step="0.01" value="1500.00" required />
+            </div>
+            <div>
+                <label for="quantidade">Quantidade</label>
+                <input type="number" id="quantidade" value="1" min="1" required />
+            </div>
+        </div>
+        <button type="submit" class="btn">Chamar PedidoService.InserirPedido()</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Pedidos Cadastrados (Entidades Monoliticas)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Cliente</th>
+                <th>Produto</th>
+                <th>Unitario</th>
+                <th>Qtd</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Criado Em</th>
+            </tr>
+        </thead>
+        <tbody id="tabela-pedidos">
+            @foreach (var p in Model)
+            {
+                <tr>
+                    <td style="font-family: monospace; font-size: 0.75rem; color: var(--text-secondary);">@p.Id.ToString().Substring(0, 8)...</td>
+                    <td style="font-weight: 600;">@p.Cliente</td>
+                    <td>@p.Produto</td>
+                    <td>@p.ValorUnitario.ToString("C")</td>
+                    <td>@p.Quantidade</td>
+                    <td style="font-weight: 600;">@p.ValorTotal.ToString("C")</td>
+                    <td><span class="badge badge-pendente">@p.Status</span></td>
+                    <td style="color: var(--text-secondary); font-size: 0.8rem;">@p.DataCriacao.ToString("HH:mm:ss")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<script>
+    document.getElementById('form-pedido').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var formData = new URLSearchParams();
+        formData.append('cliente', document.getElementById('cliente').value.trim());
+        formData.append('produto', document.getElementById('produto').value.trim());
+        formData.append('valorUnitario', document.getElementById('valor').value);
+        formData.append('quantidade', document.getElementById('quantidade').value);
+
+        fetch('@Url.Action("Criar", "PedidosLegado")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        }).then(function(res) {
+            if (res.ok) {
+                window.location.reload();
+            }
+        });
+    });
+</script>

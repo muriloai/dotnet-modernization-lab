@@ -1,0 +1,200 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conceito 28 - Mediator e CQRS (.NET 10)</title>
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Mediator e CQRS</h1>
+      <p class="subtitle">Desacoplamento de Casos de Uso com Commands, Queries e Pipeline Behaviors no .NET 10</p>
+    </header>
+
+    <div class="grid">
+      <!-- Coluna Command -->
+      <div class="card">
+        <h2>Command: CriarPedido (Escrita)</h2>
+        <form id="form-pedido">
+          <div class="form-group">
+            <label for="cliente">Nome do Cliente</label>
+            <input type="text" id="cliente" placeholder="Ex: Inova Solucoes LTDA" required>
+          </div>
+          <div class="form-group">
+            <label for="produto">Produto</label>
+            <input type="text" id="produto" placeholder="Ex: Switch Gerenciavel 24 Portas" required>
+          </div>
+          <div class="form-grid">
+            <div>
+              <label for="valor">Valor Unitario (R$)</label>
+              <input type="number" id="valor" step="0.01" value="2890.00" required>
+            </div>
+            <div>
+              <label for="quantidade">Quantidade</label>
+              <input type="number" id="quantidade" value="2" min="1" required>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">Despachar CriarPedidoCommand</button>
+        </form>
+
+        <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button class="quick-btn" onclick="preencher('Hospital Sao Lucas', 'Servidor de Backup NAS', 8500, 1)">NAS Hospitalar</button>
+          <button class="quick-btn" onclick="preencher('Escola Futuro', 'Tablet Educacional 10 pol', 1200, 5)">Tablets Escola</button>
+        </div>
+      </div>
+
+      <!-- Coluna Pipeline Behaviors -->
+      <div class="card">
+        <h2>Pipeline Behaviors em Execucao</h2>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+          Interceptacao in-process com LoggingBehavior e TimingBehavior antes e depois do Handler.
+        </p>
+        <div id="traces-list" class="traces-container">
+          <div style="color: var(--text-secondary); text-align: center; padding: 1rem;">Nenhum trace registrado ainda.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Linha Query -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Query: ObterPedidos (Leitura Otimizada)</h2>
+        <button class="quick-btn" onclick="carregarPedidos()">Atualizar Query</button>
+      </div>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Cliente</th>
+              <th>Produto</th>
+              <th>Unitario</th>
+              <th>Qtd</th>
+              <th>Total</th>
+              <th>Status</th>
+              <th>Criado Em</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-pedidos">
+            <tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">Carregando dados...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function preencher(cli, prod, val, qtd) {
+      document.getElementById('cliente').value = cli;
+      document.getElementById('produto').value = prod;
+      document.getElementById('valor').value = val;
+      document.getElementById('quantidade').value = qtd;
+    }
+
+    document.getElementById('form-pedido').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        cliente: document.getElementById('cliente').value.trim(),
+        produto: document.getElementById('produto').value.trim(),
+        valorUnitario: parseFloat(document.getElementById('valor').value),
+        quantidade: parseInt(document.getElementById('quantidade').value)
+      };
+
+      try {
+        const res = await fetch('/api/pedidos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          carregarPedidos();
+          carregarTraces();
+        }
+      } catch (err) {
+        console.error('Erro ao despachar comando:', err);
+      }
+    });
+
+    async function carregarPedidos() {
+      try {
+        const res = await fetch('/api/pedidos');
+        if (res.ok) {
+          const pedidos = await res.json();
+          renderizarPedidos(pedidos);
+        }
+      } catch (err) {
+        console.error('Erro ao executar query:', err);
+      }
+    }
+
+    async function carregarTraces() {
+      try {
+        const res = await fetch('/api/pedidos/traces');
+        if (res.ok) {
+          const traces = await res.json();
+          renderizarTraces(traces);
+        }
+      } catch (err) {
+        console.error('Erro ao buscar traces:', err);
+      }
+    }
+
+    function renderizarPedidos(pedidos) {
+      const tbody = document.getElementById('tabela-pedidos');
+      if (!pedidos || pedidos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-secondary);">Nenhum pedido encontrado.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = pedidos.map(p => {
+        let badgeClass = 'badge-pendente';
+        if (p.status === 'Faturado') badgeClass = 'badge-faturado';
+        if (p.status === 'Processando') badgeClass = 'badge-processando';
+
+        const dataStr = new Date(p.criadoEm).toLocaleTimeString();
+        const total = p.valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        const unitario = p.valorUnitario.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        return `
+          <tr>
+            <td style="font-family: monospace; font-size: 0.75rem; color: var(--text-secondary);">${p.id.substring(0, 8)}...</td>
+            <td style="font-weight: 600;">${p.cliente}</td>
+            <td>${p.produto}</td>
+            <td>${unitario}</td>
+            <td>${p.quantidade}</td>
+            <td style="font-weight: 600; color: var(--accent-cyan);">${total}</td>
+            <td><span class="badge ${badgeClass}">${p.status}</span></td>
+            <td style="color: var(--text-secondary); font-size: 0.8rem;">${dataStr}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderizarTraces(traces) {
+      const container = document.getElementById('traces-list');
+      if (!traces || traces.length === 0) {
+        container.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 1rem;">Nenhum trace registrado ainda.</div>';
+        return;
+      }
+
+      container.innerHTML = traces.map(t => {
+        const hora = new Date(t.timestamp).toLocaleTimeString();
+        return `
+          <div class="trace-line">
+            <span style="color: var(--text-secondary); font-size: 0.7rem;">[${hora}]</span>
+            <span class="trace-tag">${t.estagio}</span>
+            <span>${t.mensagem}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    carregarPedidos();
+    carregarTraces();
+    setInterval(carregarTraces, 2000);
+  </script>
+</body>
+</html>
