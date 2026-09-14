@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conceito 21: Serialização JSON (.NET 10)</title>
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-title-row">
+        <div>
+          <h1>Conceito 21: Serialização JSON</h1>
+          <p class="subtitle">Laboratório comparativo: System.Text.Json, Source Generators e streaming IAsyncEnumerable no .NET 10</p>
+        </div>
+        <span class="badge-dotnet">.NET 10 (Kestrel - Porta 7100)</span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h2>1. Deserialização Polimórfica</h2>
+        <p class="subtitle" style="margin-bottom: 0.5rem;">
+          O ASP.NET Core deserializa a hierarquia <code>Pagamento</code> usando os atributos <code>[JsonPolymorphic]</code> e discriminadores nomeados (sem expor nomes de tipos C#).
+        </p>
+
+        <div class="button-row">
+          <button type="button" id="btnTestarPix" class="btn-primary">Enviar Pagamento Pix ($tipo: pix)</button>
+          <button type="button" id="btnTestarCartao" class="btn-primary">Enviar Pagamento Cartão ($tipo: cartao)</button>
+        </div>
+
+        <div class="response-box" style="margin-top: 1rem; min-height: 140px;">
+          <pre><code id="corpoPolimorfismo">// Clique em um dos botões acima para testar o polimorfismo seguro.</code></pre>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>2. Benchmark: Reflexão vs Source Generator</h2>
+        <p class="subtitle" style="margin-bottom: 0.5rem;">
+          Compara a serialização padrão via reflexão contra a execução direta via delegates pré-compilados do <code>CatalogoJsonContext</code>.
+        </p>
+
+        <div class="button-row">
+          <button type="button" id="btnBenchmark" class="btn-success">Executar Teste de Carga e Alocação</button>
+        </div>
+
+        <div class="metric-grid" id="painelMetricas" style="display: none;">
+          <div class="metric-card">
+            <div class="metric-label">Tempo Reflexão vs Source Gen</div>
+            <div class="metric-value" id="valTempo">-- ms vs -- ms</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Ganho de Velocidade</div>
+            <div class="metric-value positive" id="valGanhoTempo">+0%</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Memória Heap (Reflexão vs Source Gen)</div>
+            <div class="metric-value" id="valMemoria">-- KB vs -- KB</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Redução de Alocação</div>
+            <div class="metric-value positive" id="valReducaoMemoria">-0%</div>
+          </div>
+        </div>
+
+        <div id="msgAguardandoBenchmark" style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 1rem;">
+          Clique para processar 12.500 objetos e mensurar o Garbage Collector.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>3. Streaming Assíncrono com IAsyncEnumerable</h2>
+      <p class="subtitle" style="margin-bottom: 0.5rem;">
+        No .NET 10, dados volumosos não precisam ser alocados em um array gigante em memória. Eles são transmitidos via Chunked Transfer Encoding conforme são lidos.
+      </p>
+
+      <div class="button-row">
+        <button type="button" id="btnStreaming" class="btn-primary">Iniciar Leitura de Streaming Sob Demanda</button>
+        <button type="button" id="btnLimparStream" class="btn-secondary">Limpar</button>
+      </div>
+
+      <div id="streamingFeed" class="streaming-feed">
+        <div style="color: var(--text-secondary); font-style: italic; padding: 0.5rem 0;">
+          Nenhum stream ativo. Clique no botão para receber itens fragmentados em tempo real.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Comparativo Arquitetural: Legado vs Moderno</h2>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Característica</th>
+            <th>.NET Framework 4.8.1 (Legado)</th>
+            <th>.NET 10 (Moderno)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Biblioteca Padrão</strong></td>
+            <td>Newtonsoft.Json (Json.NET) externo ou JavaScriptSerializer defasado.</td>
+            <td>System.Text.Json nativo da BCL, construído sobre bytes UTF-8.</td>
+          </tr>
+          <tr>
+            <td><strong>Reflexão e Metadados</strong></td>
+            <td>Reflexão pesada em tempo de execução para inspecionar propriedades e construtores.</td>
+            <td>Zero reflexão via Source Generators (JsonSerializerContext) gerados pelo compilador C#.</td>
+          </tr>
+          <tr>
+            <td><strong>Consumo de Memória</strong></td>
+            <td>Converte bytes em strings intermediárias, gerando alta pressão no LOH.</td>
+            <td>Operação direta sobre ReadOnlySpan&lt;byte&gt; sem decodificar strings temporárias.</td>
+          </tr>
+          <tr>
+            <td><strong>Polimorfismo</strong></td>
+            <td>TypeNameHandling propenso a falhas de segurança e injeção de classes.</td>
+            <td>[JsonPolymorphic] seguro com discriminadores explícitos declarados em atributos.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const corpoPolimorfismo = document.getElementById('corpoPolimorfismo');
+    const painelMetricas = document.getElementById('painelMetricas');
+    const msgAguardando = document.getElementById('msgAguardandoBenchmark');
+    const valTempo = document.getElementById('valTempo');
+    const valGanhoTempo = document.getElementById('valGanhoTempo');
+    const valMemoria = document.getElementById('valMemoria');
+    const valReducaoMemoria = document.getElementById('valReducaoMemoria');
+    const streamingFeed = document.getElementById('streamingFeed');
+
+    document.getElementById('btnTestarPix').addEventListener('click', async () => {
+      corpoPolimorfismo.textContent = 'Enviando payload Pix...';
+      const payload = {
+        $tipo: "pix",
+        valor: 350.00,
+        moeda: "BRL",
+        chavePix: "financeiro@empresa.com.br",
+        identificadorTransacao: "E9023481023849102"
+      };
+
+      try {
+        const resp = await fetch('/api/serializacao/polimorfismo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const dados = await resp.json();
+        corpoPolimorfismo.textContent = JSON.stringify(dados, null, 2);
+      } catch (err) {
+        corpoPolimorfismo.textContent = 'Erro: ' + err.message;
+      }
+    });
+
+    document.getElementById('btnTestarCartao').addEventListener('click', async () => {
+      corpoPolimorfismo.textContent = 'Enviando payload Cartão...';
+      const payload = {
+        $tipo: "cartao",
+        valor: 1890.50,
+        moeda: "BRL",
+        numeroMascarado: "**** **** **** 4491",
+        parcelas: 6,
+        bandeira: "Visa Platinum"
+      };
+
+      try {
+        const resp = await fetch('/api/serializacao/polimorfismo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const dados = await resp.json();
+        corpoPolimorfismo.textContent = JSON.stringify(dados, null, 2);
+      } catch (err) {
+        corpoPolimorfismo.textContent = 'Erro: ' + err.message;
+      }
+    });
+
+    document.getElementById('btnBenchmark').addEventListener('click', async () => {
+      msgAguardando.textContent = 'Executando benchmark de serialização... Por favor, aguarde.';
+      painelMetricas.style.display = 'none';
+
+      try {
+        const resp = await fetch('/api/serializacao/benchmark');
+        const m = await resp.json();
+
+        valTempo.textContent = `${m.tempoReflexaoMs} ms vs ${m.tempoSourceGenMs} ms`;
+        valGanhoTempo.textContent = `+${m.ganhoPercentualTempo}% mais rápido`;
+        valMemoria.textContent = `${Math.round(m.memoriaAlocadaReflexaoBytes / 1024)} KB vs ${Math.round(m.memoriaAlocadaSourceGenBytes / 1024)} KB`;
+        valReducaoMemoria.textContent = `-${m.reducaoMemoriaPercentual}% menos memória`;
+
+        painelMetricas.style.display = 'grid';
+        msgAguardando.textContent = `Benchmark concluído com êxito sobre ${m.totalItens.toLocaleString('pt-BR')} objetos processados.`;
+      } catch (err) {
+        msgAguardando.textContent = 'Erro ao executar benchmark: ' + err.message;
+      }
+    });
+
+    document.getElementById('btnStreaming').addEventListener('click', async () => {
+      streamingFeed.innerHTML = '<div style="color: var(--accent);">Conectando ao stream assíncrono...</div>';
+
+      try {
+        const response = await fetch('/api/serializacao/streaming-catalogo');
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let contador = 0;
+
+        streamingFeed.innerHTML = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          
+          // Dividir por delimitador de array JSON
+          const partes = buffer.split(/[\{\}]/);
+          for (let i = 1; i < partes.length - 1; i += 2) {
+            try {
+              const itemJson = '{' + partes[i] + '}';
+              const item = JSON.parse(itemJson);
+              contador++;
+              const el = document.createElement('div');
+              el.className = 'stream-item';
+              el.innerHTML = `<span><strong>#${item.id}</strong> ${item.nome} (${item.categoria})</span><span>R$ ${item.preco.toFixed(2)}</span>`;
+              streamingFeed.prepend(el);
+            } catch (e) {
+              // Fragmento incompleto, continua no buffer
+            }
+          }
+        }
+      } catch (err) {
+        streamingFeed.innerHTML = `<div style="color: var(--danger);">Falha no stream: ${err.message}</div>`;
+      }
+    });
+
+    document.getElementById('btnLimparStream').addEventListener('click', () => {
+      streamingFeed.innerHTML = '<div style="color: var(--text-secondary); font-style: italic; padding: 0.5rem 0;">Nenhum stream ativo.</div>';
+    });
+  </script>
+</body>
+</html>

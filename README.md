@@ -74,6 +74,12 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | [19](concepts/19-error-handling/README.md)    | Tratamento de Erros                  | Application_Error, HandleErrorAttribute e customErrors no Web.config | IExceptionHandler, UseExceptionHandler e RFC 7807/9457 ProblemDetails   |
 | [20](concepts/20-health-checks/README.md)     | Health Checks e Diagnósticos         | Handlers manuais .ashx (ping/status), SELECT 1 e PerformanceCounters | AddHealthChecks, IHealthCheck, liveness/readiness probes e métricas nativas |
 
+### Serialização, Cache e Desempenho
+
+| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        |
+| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [21](concepts/21-json-serialization/README.md) | Serialização JSON                    | JavaScriptSerializer, Newtonsoft.Json (Json.NET) e reflexão pesada | System.Text.Json, Utf8JsonReader/Writer, Source Generators e streaming IAsyncEnumerable |
+
 ---
 
 ## Pré-requisitos para Execução

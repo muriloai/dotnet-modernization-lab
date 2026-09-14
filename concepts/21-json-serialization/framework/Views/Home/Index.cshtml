@@ -1,0 +1,153 @@
+@{
+    ViewBag.Title = "Conceito 21: Serialização JSON (Legado)";
+    bool sucessoBenchmark = ViewBag.SucessoBenchmark ?? false;
+}
+
+<header>
+    <div class="header-title-row">
+        <div>
+            <h1>Conceito 21: Serialização JSON</h1>
+            <p class="subtitle">Laboratório comparativo: JavaScriptSerializer e Newtonsoft.Json no .NET Framework 4.8.1</p>
+        </div>
+        <span class="badge-dotnet">.NET Framework 4.8.1 (IIS Express - Porta 7101)</span>
+    </div>
+</header>
+
+<div class="grid">
+    <div class="card">
+        <h2>Benchmark de Serialização Legada</h2>
+        <p class="subtitle" style="margin-bottom: 1rem;">
+            No .NET Framework, a serialização JSON começou com o JavaScriptSerializer (System.Web.Extensions) e migrou para o Newtonsoft.Json devido a limitações severas de performance e tipos.
+        </p>
+
+        @using (Html.BeginForm("ExecutarBenchmark", "Home", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <div class="form-group">
+                <label for="quantidade">Quantidade de Registros (1 a 50.000):</label>
+                <input type="number" id="quantidade" name="quantidade" class="form-control" value="@(ViewBag.Quantidade ?? 5000)" min="100" max="50000" />
+            </div>
+            <button type="submit" class="btn-primary" style="width: 100%;">
+                Executar Serialização em Memória
+            </button>
+        }
+
+        @if (sucessoBenchmark)
+        {
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--accent);">Resultados do Lote (@ViewBag.Quantidade itens):</h3>
+                
+                <div class="grid" style="margin-bottom: 0;">
+                    <div class="metric-box">
+                        <div class="metric-title">JavaScriptSerializer</div>
+                        <div class="metric-value">@ViewBag.TempoJs.ToString("F2") ms</div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                            Tamanho: @ViewBag.TamanhoJsKb KB
+                        </div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-title">Newtonsoft.Json</div>
+                        <div class="metric-value">@ViewBag.TempoNewtonsoft.ToString("F2") ms</div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                            Tamanho: @ViewBag.TamanhoNewtonsoftKb KB
+                        </div>
+                    </div>
+                </div>
+
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                    Observação: Ambos os métodos alocam strings completas na Large Object Heap (LOH) para cargas volumosas, gerando fragmentação de memória sob alta concorrência.
+                </p>
+            </div>
+        }
+
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+            <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">Endpoint de Download (Buffer Total)</h3>
+            <a href="/Home/BaixarJson?quantidade=2000" target="_blank" class="btn-secondary" style="width: 100%; text-align: center;">
+                Baixar JSON Bufferizado (/Home/BaixarJson)
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Polimorfismo no Modelo Legado</h2>
+        <p class="subtitle" style="margin-bottom: 1rem;">
+            No ecossistema legado, tratar hierarquias de herança exigia classes achatadas com campos opcionais ou o uso de TypeNameHandling no Newtonsoft.Json, vetor clássico de vulnerabilidades RCE.
+        </p>
+
+        @using (Html.BeginForm("TestarPolimorfismo", "Home", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <div class="form-group">
+                <label for="tipo">Tipo de Pagamento:</label>
+                <select id="tipo" name="tipo" class="form-control">
+                    <option value="pix">PIX (Chave PIX)</option>
+                    <option value="cartao">Cartão de Crédito (Número e Parcelas)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="valor">Valor (R$):</label>
+                <input type="text" id="valor" name="valor" class="form-control" value="289.90" />
+            </div>
+            <div class="form-group">
+                <label for="chavePix">Chave PIX (se PIX):</label>
+                <input type="text" id="chavePix" name="chavePix" class="form-control" value="financeiro@empresa.com.br" />
+            </div>
+            <div class="form-group">
+                <label for="numeroCartao">Número do Cartão (se Cartão):</label>
+                <input type="text" id="numeroCartao" name="numeroCartao" class="form-control" value="5502.1234.5678.9010" />
+            </div>
+            <div class="form-group">
+                <label for="parcelas">Parcelas (se Cartão):</label>
+                <input type="number" id="parcelas" name="parcelas" class="form-control" value="3" min="1" max="12" />
+            </div>
+            <button type="submit" class="btn-primary" style="width: 100%;">
+                Serializar Pagamento Legado
+            </button>
+        }
+
+        @if (ViewBag.ResultadoPolimorfismoJson != null)
+        {
+            <div style="margin-top: 1rem;">
+                <h3 style="font-size: 0.9rem; color: var(--accent);">JSON Gerado (Objeto Achatado):</h3>
+                <pre>@ViewBag.ResultadoPolimorfismoJson</pre>
+                <p style="font-size: 0.8rem; color: var(--danger); margin-top: 0.5rem;">
+                    @ViewBag.AvisoSeguranca
+                </p>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <h2>Limitações Arquiteturais do .NET Framework 4.8.1</h2>
+    <table class="comparison-table">
+        <thead>
+            <tr>
+                <th>Característica</th>
+                <th>Comportamento no .NET Framework 4.8.1</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Alocação de Memória</strong></td>
+                <td>Serializadores operam sobre strings UTF-16 intermediárias. Objetos grandes são montados integralmente em memória, promovendo buffers direto para a LOH (Large Object Heap) e causando GC pauses.</td>
+            </tr>
+            <tr>
+                <td><strong>Reflexão em Tempo de Execução</strong></td>
+                <td>Tanto JavaScriptSerializer quanto Newtonsoft.Json dependem de reflexão profunda (System.Reflection) em tempo de execução para inspecionar propriedades, impactando CPU e latência.</td>
+            </tr>
+            <tr>
+                <td><strong>Herança e Polimorfismo</strong></td>
+                <td>Não há suporte nativo a discriminadores declarativos tipados. Ativar TypeNameHandling no Newtonsoft.Json expõe a aplicação a Remote Code Execution (RCE) via desserialização arbitrária de tipos .NET.</td>
+            </tr>
+            <tr>
+                <td><strong>Streaming Assíncrono</strong></td>
+                <td>Inexistência de IAsyncEnumerable. Toda a coleção deve ser materializada no servidor antes do envio da resposta HTTP ao cliente.</td>
+            </tr>
+            <tr>
+                <td><strong>Suporte a UTF-8</strong></td>
+                <td>A serialização precisa transcodificar internamente de UTF-16 para UTF-8 durante a escrita na stream de resposta do IIS, gerando overhead constante de CPU.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
