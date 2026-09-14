@@ -79,6 +79,7 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        |
 | --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | [21](concepts/21-json-serialization/README.md) | Serialização JSON                    | JavaScriptSerializer, Newtonsoft.Json (Json.NET) e reflexão pesada | System.Text.Json, Utf8JsonReader/Writer, Source Generators e streaming IAsyncEnumerable |
+| [22](concepts/22-caching/README.md)           | Estratégias de Cache                 | System.Web.Caching.Cache, OutputCache em MVC, MemoryCache estático e sem tags | IMemoryCache, IDistributedCache, OutputCache middleware com Tags e eviction seletiva |
 
 ---
 

@@ -1,0 +1,49 @@
+@model List<CachingDemo.Models.ProdutoLegado>
+@{
+    ViewBag.Title = "Catálogo com OutputCache";
+}
+
+<header>
+    <div class="header-title-row">
+        <div>
+            <h1>Catálogo com [OutputCache]</h1>
+            <p class="subtitle">Categoria: @ViewBag.Categoria | Carimbo de Geração: @ViewBag.CarimboServidor</p>
+        </div>
+        <span class="badge-dotnet">.NET Framework 4.8.1 (Porta 7201)</span>
+    </div>
+</header>
+
+<div class="card">
+    <h2>Produtos em Cache</h2>
+    <p class="subtitle" style="margin-bottom: 1rem;">
+        Esta view utiliza <code>[OutputCache(Duration = 30, VaryByParam = "categoria")]</code>. Se você atualizar esta página no navegador, o carimbo <strong>@ViewBag.CarimboServidor</strong> permanecerá idêntico durante 30 segundos.
+    </p>
+
+    <table class="comparison-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Categoria</th>
+                <th>Preço</th>
+                <th>Criado Em</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in Model)
+            {
+                <tr>
+                    <td>@p.Id</td>
+                    <td>@p.Nome</td>
+                    <td>@p.Categoria</td>
+                    <td>R$ @p.Preco.ToString("N2")</td>
+                    <td>@p.DataHoraCriacao.ToString("HH:mm:ss")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div style="margin-top: 1.5rem;">
+        <a href="/Home/Index" class="btn-secondary">Voltar ao Início</a>
+    </div>
+</div>

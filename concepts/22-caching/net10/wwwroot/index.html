@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Conceito 22: Estratégias de Cache (.NET 10)</title>
+    <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-title-row">
+                <div>
+                    <h1>Conceito 22: Estratégias de Cache</h1>
+                    <p class="subtitle">IMemoryCache, mitigação de Cache Stampede, IDistributedCache e Output Caching com Tag-based Eviction</p>
+                </div>
+                <span class="badge-dotnet">.NET 10 (Kestrel - Porta 7200)</span>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="alternarAba('stampede')">1. Simulador de Cache Stampede</button>
+            <button class="tab-button" onclick="alternarAba('outputcache')">2. Output Caching e Tags</button>
+            <button class="tab-button" onclick="alternarAba('distribuido')">3. Cache Distribuído</button>
+        </div>
+
+        <!-- ABA 1: STAMPEDE -->
+        <div id="aba-stampede" class="tab-content active">
+            <div class="grid">
+                <div class="card">
+                    <h2>Simulador de Concorrência e Stampede</h2>
+                    <p class="subtitle" style="margin-bottom: 1rem;">
+                        O problema do Cache Stampede (ou Dogpiling) ocorre quando uma chave quente expira e dezenas de requisições simultâneas detectam o cache miss ao mesmo tempo, disparando consultas duplicadas e sobrecarregando o banco de dados.
+                    </p>
+
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <button class="btn-danger" onclick="executarStampede('/api/cache/stampede/sem-trava')">
+                            Disparar 10 Requisições Sem Trava (Modo Legado/Frágil)
+                        </button>
+                        <button class="btn-success" onclick="executarStampede('/api/cache/stampede/com-trava')">
+                            Disparar 10 Requisições Com Trava Assíncrona (SemaphoreSlim)
+                        </button>
+                        <button class="btn-secondary" onclick="resetarStampede()">
+                            Limpar Cache em Memória e Resetar Contador
+                        </button>
+                    </div>
+
+                    <div id="loading-stampede" style="display: none; margin-top: 1rem; color: var(--accent);">
+                        Processando 10 requisições simultâneas com latência de banco de 300ms...
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Métricas da Execução</h2>
+                    <div class="metric-grid">
+                        <div class="metric-box">
+                            <div class="metric-title">Requisições</div>
+                            <div id="met-requisicoes" class="metric-value">0</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-title">Consultas ao Banco</div>
+                            <div id="met-banco" class="metric-value">0</div>
+                        </div>
+                        <div class="metric-box">
+                            <div class="metric-title">Tempo Total</div>
+                            <div id="met-tempo" class="metric-value">0 ms</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 1.5rem;">
+                        <h3 style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Diagnóstico do Comportamento:</h3>
+                        <div id="desc-stampede" style="font-size: 0.85rem; line-height: 1.6; color: var(--text-primary); background-color: var(--bg-primary); padding: 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                            Selecione um dos botões ao lado para disparar as tarefas concorrentes.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 2: OUTPUT CACHE -->
+        <div id="aba-outputcache" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <h2>Output Caching com Invalidação por Tags</h2>
+                    <p class="subtitle" style="margin-bottom: 1rem;">
+                        Diferente do [OutputCache] do .NET Framework que exigia adivinhar a URL completa para limpar itens, o middleware de Output Caching do .NET 10 permite rotular respostas com tags de domínio e invalidar grupos inteiros com IOutputCacheStore.EvictByTagAsync.
+                    </p>
+
+                    <div class="form-group">
+                        <label for="select-categoria">Selecione a Categoria do Catálogo:</label>
+                        <select id="select-categoria" class="form-control">
+                            <option value="eletronicos">Eletrônicos (Tag: categoria-eletronicos)</option>
+                            <option value="escritorio">Escritório (Tag: categoria-escritorio)</option>
+                            <option value="livros">Livros (Tag: categoria-livros)</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                        <button class="btn-primary" onclick="consultarOutputCache()">
+                            Consultar Categoria (GET)
+                        </button>
+                        <button class="btn-danger" onclick="invalidarTag()">
+                            Invalidar Tag da Categoria (POST EvictByTag)
+                        </button>
+                    </div>
+
+                    <div style="margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+                        <p><strong>Como testar:</strong></p>
+                        <ol style="padding-left: 1.2rem;">
+                            <li>Clique em <strong>Consultar Categoria</strong>: observe o carimbo de data e hora gerado.</li>
+                            <li>Clique novamente: note que o carimbo de hora <strong>permanece idêntico</strong>, pois a resposta foi servida instantaneamente do cache sem passar pelo controller.</li>
+                            <li>Clique em <strong>Invalidar Tag</strong>: a tag específica será purgada. Na próxima consulta, um novo carimbo será gerado, enquanto outras categorias continuam intactas no cache!</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Resposta HTTP da Rota</h2>
+                    <div style="margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                        <span id="outputcache-tag-badge" class="badge-tag">Tag: categoria-eletronicos</span>
+                        <span id="outputcache-status" style="font-size: 0.8rem; color: var(--text-secondary);">Aguardando consulta...</span>
+                    </div>
+                    <pre id="outputcache-resultado">// A resposta do endpoint com o carimbo do servidor será exibida aqui</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 3: DISTRIBUIDO -->
+        <div id="aba-distribuido" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <h2>Abstração IDistributedCache</h2>
+                    <p class="subtitle" style="margin-bottom: 1rem;">
+                        No .NET 10, IDistributedCache padroniza a interface de cache distribuído. O código de negócio manipula bytes ou serialização JSON sem saber se o provedor subjacente é Redis, SQL Server ou uma memória compartilhada para testes.
+                    </p>
+
+                    <div class="form-group">
+                        <label for="input-prod-id">ID do Produto (1 a 7):</label>
+                        <input type="number" id="input-prod-id" class="form-control" value="1" min="1" max="7" />
+                    </div>
+
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                        <button class="btn-primary" onclick="consultarDistribuido()">
+                            Consultar via IDistributedCache
+                        </button>
+                        <button class="btn-secondary" onclick="removerDistribuido()">
+                            Remover Chave Distribuída
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Estado no Cache Distribuído</h2>
+                    <pre id="distribuido-resultado">// O resultado obtido através do IDistributedCache será exibido aqui</pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Quadro Comparativo: .NET Framework 4.8.1 vs .NET 10</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Característica</th>
+                        <th>.NET Framework 4.8.1 (Legado)</th>
+                        <th>.NET 10 (Moderno)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>In-Memory Cache</strong></td>
+                        <td>System.Web.Caching.Cache (estático, acoplado ao IIS) ou MemoryCache estático</td>
+                        <td>IMemoryCache via Injeção de Dependências com escopos claros e testáveis</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cache Stampede</strong></td>
+                        <td>Sem proteção nativa: múltiplas threads atingem o banco ao expirar a chave</td>
+                        <td>Mitigado com GetOrCreateAsync e SemaphoreSlim por chave</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cache Distribuído</strong></td>
+                        <td>Inexistente na BCL: cada fornecedor impunha sua própria API proprietária</td>
+                        <td>IDistributedCache padronizado (Redis, SQL Server, Memória)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Invalidação de Resposta</strong></td>
+                        <td>[OutputCache] com remoção estrita por URL completa via RemoveOutputCacheItem</td>
+                        <td>Middleware OutputCache com EvictByTagAsync para invalidação semântica por tags</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Prevenção de Locks de I/O</strong></td>
+                        <td>Bloqueios síncronos com lock/Monitor, propensos a contenção de threads</td>
+                        <td>Semáforos assíncronos não bloqueantes (WaitAsync)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function alternarAba(nome) {
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(conteudo => conteudo.classList.remove('active'));
+
+            if (nome === 'stampede') {
+                document.querySelectorAll('.tab-button')[0].classList.add('active');
+                document.getElementById('aba-stampede').classList.add('active');
+            } else if (nome === 'outputcache') {
+                document.querySelectorAll('.tab-button')[1].classList.add('active');
+                document.getElementById('aba-outputcache').classList.add('active');
+            } else if (nome === 'distribuido') {
+                document.querySelectorAll('.tab-button')[2].classList.add('active');
+                document.getElementById('aba-distribuido').classList.add('active');
+            }
+        }
+
+        async function executarStampede(endpoint) {
+            const loading = document.getElementById('loading-stampede');
+            loading.style.display = 'block';
+
+            try {
+                const res = await fetch(endpoint, { method: 'POST' });
+                const dados = await res.json();
+
+                document.getElementById('met-requisicoes').innerText = dados.requisicoesDisparadas;
+                
+                const elemBanco = document.getElementById('met-banco');
+                elemBanco.innerText = dados.acessosReaisAoBanco;
+                if (dados.acessosReaisAoBanco > 1) {
+                    elemBanco.className = 'metric-value metric-danger';
+                } else {
+                    elemBanco.className = 'metric-value metric-success';
+                }
+
+                document.getElementById('met-tempo').innerText = dados.tempoTotalMs + ' ms';
+                document.getElementById('desc-stampede').innerText = dados.modo + ': ' + dados.descricao;
+            } catch (err) {
+                alert('Erro ao executar stampede: ' + err);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        async function resetarStampede() {
+            try {
+                const res = await fetch('/api/cache/stampede/resetar', { method: 'POST' });
+                const dados = await res.json();
+                document.getElementById('met-requisicoes').innerText = '0';
+                document.getElementById('met-banco').innerText = '0';
+                document.getElementById('met-banco').className = 'metric-value';
+                document.getElementById('met-tempo').innerText = '0 ms';
+                document.getElementById('desc-stampede').innerText = dados.mensagem;
+            } catch (err) {
+                alert('Erro ao resetar: ' + err);
+            }
+        }
+
+        async function consultarOutputCache() {
+            const categoria = document.getElementById('select-categoria').value;
+            document.getElementById('outputcache-tag-badge').innerText = 'Tag: categoria-' + categoria;
+            document.getElementById('outputcache-status').innerText = 'Consultando endpoint...';
+
+            try {
+                const res = await fetch('/api/cache/output/categoria/' + encodeURIComponent(categoria));
+                const dados = await res.json();
+                document.getElementById('outputcache-resultado').innerText = JSON.stringify(dados, null, 2);
+                document.getElementById('outputcache-status').innerText = 'Carimbo do Servidor: ' + dados.geradoEm;
+            } catch (err) {
+                document.getElementById('outputcache-resultado').innerText = 'Erro: ' + err;
+            }
+        }
+
+        async function invalidarTag() {
+            const categoria = document.getElementById('select-categoria').value;
+            try {
+                const res = await fetch('/api/cache/output/invalidar-tag/' + encodeURIComponent(categoria), { method: 'POST' });
+                const dados = await res.json();
+                alert(dados.mensagem);
+                document.getElementById('outputcache-status').innerText = 'Tag invalidada em ' + dados.dataHora;
+            } catch (err) {
+                alert('Erro ao invalidar tag: ' + err);
+            }
+        }
+
+        async function consultarDistribuido() {
+            const id = document.getElementById('input-prod-id').value;
+            try {
+                const res = await fetch('/api/cache/distribuido/' + encodeURIComponent(id));
+                const dados = await res.json();
+                document.getElementById('distribuido-resultado').innerText = JSON.stringify(dados, null, 2);
+            } catch (err) {
+                document.getElementById('distribuido-resultado').innerText = 'Erro: ' + err;
+            }
+        }
+
+        async function removerDistribuido() {
+            const id = document.getElementById('input-prod-id').value;
+            try {
+                const res = await fetch('/api/cache/distribuido/' + encodeURIComponent(id), { method: 'DELETE' });
+                const dados = await res.json();
+                alert(dados.mensagem);
+                document.getElementById('distribuido-resultado').innerText = '// Chave removida do IDistributedCache';
+            } catch (err) {
+                alert('Erro ao remover chave: ' + err);
+            }
+        }
+    </script>
+</body>
+</html>

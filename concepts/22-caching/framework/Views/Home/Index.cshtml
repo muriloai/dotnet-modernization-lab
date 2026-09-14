@@ -1,0 +1,118 @@
+@{
+    ViewBag.Title = "Conceito 22: Estratégias de Cache (Legado)";
+    bool sucessoStampede = ViewBag.SucessoStampede ?? false;
+}
+
+<header>
+    <div class="header-title-row">
+        <div>
+            <h1>Conceito 22: Estratégias de Cache</h1>
+            <p class="subtitle">Laboratório comparativo: HttpRuntime.Cache, OutputCache de Actions e riscos de concorrência no .NET Framework 4.8.1</p>
+        </div>
+        <span class="badge-dotnet">.NET Framework 4.8.1 (IIS Express - Porta 7201)</span>
+    </div>
+</header>
+
+<div class="grid">
+    <div class="card">
+        <h2>Vulnerabilidade a Cache Stampede</h2>
+        <p class="subtitle" style="margin-bottom: 1rem;">
+            No .NET Framework, o <code>HttpRuntime.Cache</code> não possui mecanismo embutido de bloqueio por chave. Quando uma chave expira sob concorrência, múltiplas threads executam a consulta ao banco simultaneamente.
+        </p>
+
+        @using (Html.BeginForm("TestarStampedeLegado", "Home", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn-danger" style="width: 100%;">
+                Disparar 8 Chamadas Paralelas Sem Trava
+            </button>
+        }
+
+        @if (sucessoStampede)
+        {
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--accent);">Resultado da Execução Concorrente:</h3>
+                
+                <div class="grid" style="margin-bottom: 0;">
+                    <div class="metric-box">
+                        <div class="metric-title">Chamadas Paralelas</div>
+                        <div class="metric-value">@ViewBag.RequisicoesDisparadas</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-title">Consultas ao Banco</div>
+                        <div class="metric-value" style="color: var(--danger);">@ViewBag.AcessosReaisBanco</div>
+                    </div>
+                </div>
+
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.75rem;">
+                    Tempo Total: @ViewBag.TempoTotalMs ms. Note que múltiplos acessos atingiram o banco simulado ao mesmo tempo, pois nenhuma thread aguardou a outra preencher o cache.
+                </p>
+            </div>
+        }
+    </div>
+
+    <div class="card">
+        <h2>OutputCache de Action e Purga Manual</h2>
+        <p class="subtitle" style="margin-bottom: 1rem;">
+            O atributo <code>[OutputCache]</code> do MVC armazena o HTML renderizado. Porém, para invalidar um item em cache antes do tempo, era obrigatório fornecer a URL exata.
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem;">
+            <a href="/Home/Catalogo?categoria=eletronicos" target="_blank" class="btn-primary" style="text-align: center;">
+                Abrir Catálogo Eletrônicos (/Home/Catalogo?categoria=eletronicos)
+            </a>
+            <a href="/Home/Catalogo?categoria=escritorio" target="_blank" class="btn-secondary" style="text-align: center;">
+                Abrir Catálogo Escritório (/Home/Catalogo?categoria=escritorio)
+            </a>
+        </div>
+
+        @using (Html.BeginForm("LimparOutputCache", "Home", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <div class="form-group">
+                <label for="caminho">URL Exata para Purgar via RemoveOutputCacheItem:</label>
+                <input type="text" id="caminho" name="caminho" class="form-control" value="/Home/Catalogo?categoria=eletronicos" />
+            </div>
+            <button type="submit" class="btn-danger" style="width: 100%;">
+                Remover URL Específica do OutputCache
+            </button>
+        }
+
+        @if (ViewBag.MensagemRemocao != null)
+        {
+            <div style="margin-top: 1rem; font-size: 0.85rem; color: var(--accent); background-color: var(--bg-primary); padding: 0.75rem; border-radius: 4px;">
+                @ViewBag.MensagemRemocao
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <h2>Limitações Arquiteturais no Modelo Legado</h2>
+    <table class="comparison-table">
+        <thead>
+            <tr>
+                <th>Característica</th>
+                <th>Comportamento no .NET Framework 4.8.1</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Acoplamento Global</strong></td>
+                <td><code>HttpRuntime.Cache</code> e <code>HttpContext.Current.Cache</code> são singletons estáticos do pipeline do IIS, tornando testes unitários complexos.</td>
+            </tr>
+            <tr>
+                <td><strong>Cache Stampede</strong></td>
+                <td>Nenhum suporte a bloqueio por chave no runtime. A mitigação exigia locks manuais sujeitos a gargalos de thread pool.</td>
+            </tr>
+            <tr>
+                <td><strong>Cache Distribuído</strong></td>
+                <td>Não existia uma interface comum como <code>IDistributedCache</code>. A troca de fornecedor (Redis, Couchbase, Memcached) quebrava o código da aplicação.</td>
+            </tr>
+            <tr>
+                <td><strong>Invalidação Semântica</strong></td>
+                <td>Sem suporte a tags. Era impossível invalidar todas as páginas afetadas pela atualização de um produto em lote sem conhecer todas as rotas e parâmetros.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
