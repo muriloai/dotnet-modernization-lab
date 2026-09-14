@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Conceito 26: SOLID e Arquitetura Limpa (.NET 10)</title>
+    <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-title-row">
+                <div>
+                    <h1>Conceito 26: Princípios SOLID e Arquitetura Limpa</h1>
+                    <p class="subtitle">Separação estrita em camadas (Domain, Application, Infrastructure, Presentation) e Inversão de Dependências no .NET 10</p>
+                </div>
+                <span class="badge-dotnet">.NET 10 (Kestrel - Porta 7600)</span>
+            </div>
+        </header>
+
+        <div class="grid">
+            <div class="card">
+                <h2>Execução de Caso de Uso (CadastrarClienteUseCase)</h2>
+                <p class="subtitle" style="margin-bottom: 1rem;">
+                    O controller não sabe como o cliente é salvo nem como é notificado. Ele delega o comando para o caso de uso, que orquestra a entidade de domínio e as interfaces de infraestrutura.
+                </p>
+
+                <div class="form-group">
+                    <label for="cliente-nome">Nome Completo:</label>
+                    <input type="text" id="cliente-nome" class="form-control" value="Carlos Eduardo Meireles" />
+                </div>
+
+                <div class="form-group">
+                    <label for="cliente-email">Email Corporativo:</label>
+                    <input type="email" id="cliente-email" class="form-control" value="carlos.meireles@empresa.com.br" />
+                </div>
+
+                <div class="form-group">
+                    <label for="cliente-credito">Crédito Inicial de Boas-Vindas (R$):</label>
+                    <input type="number" id="cliente-credito" class="form-control" value="150.00" step="10" />
+                </div>
+
+                <button class="btn-primary" onclick="cadastrarCliente()" style="width: 100%;">
+                    Cadastrar Cliente via Clean Architecture
+                </button>
+
+                <div id="status-msg" style="margin-top: 1rem; font-size: 0.85rem; display: none;"></div>
+            </div>
+
+            <div class="card">
+                <h2>Camadas da Arquitetura Limpa</h2>
+                <div class="layer-box">
+                    <div class="layer-title">1. Presentation (Controllers / Minimal APIs)</div>
+                    <div>Recebe HTTP DTO, invoca o Use Case e responde com status 201 Created ou 400 Bad Request. Zero regra de banco ou negócio.</div>
+                </div>
+                <div class="layer-box">
+                    <div class="layer-title">2. Application (Use Cases & Interfaces)</div>
+                    <div>CadastrarClienteUseCase, IClienteRepository, INotificadorService. Orquestra o fluxo sem conhecer detalhes técnicos de persistência.</div>
+                </div>
+                <div class="layer-box">
+                    <div class="layer-title">3. Domain (Entidades & Regras Invariantes)</div>
+                    <div>Classe Cliente. Valida regras fundamentais (email válido, nome obrigatório, crédito não negativo). Zero dependências externas.</div>
+                </div>
+                <div class="layer-box">
+                    <div class="layer-title">4. Infrastructure (Repositórios & Mensageria)</div>
+                    <div>ClienteRepositoryEmMemoria, NotificadorConsoleService. Implementa os contratos definidos na camada de aplicação.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Clientes Cadastrados na Base (Persistência via IClienteRepository)</h2>
+            <div style="margin-bottom: 0.75rem;">
+                <button class="btn-secondary" onclick="carregarClientes()">Atualizar Lista</button>
+            </div>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>ID (Guid)</th>
+                        <th>Nome</th>
+                        <th>Email</th>
+                        <th>Saldo de Crédito</th>
+                        <th>Ativo</th>
+                        <th>Data de Cadastro</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-clientes">
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--text-secondary);">Carregando dados...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2>Quadro Comparativo: .NET Framework 4.8.1 vs .NET 10</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Princípio / Característica</th>
+                        <th>.NET Framework 4.8.1 (Legado)</th>
+                        <th>.NET 10 (Moderno)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Single Responsibility (SRP)</strong></td>
+                        <td>God Controllers: misturam lógica de view, validação, SQL direto e envio de email na mesma action.</td>
+                        <td>Cada Use Case executa exatamente uma operação de negócio bem delimitada.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Dependency Inversion (DIP)</strong></td>
+                        <td>Instanciação direta de novas classes concretas (new ApplicationDbContext(), new SmtpClient()).</td>
+                        <td>Toda dependência é baseada em interfaces resolvidas pelo container de DI nativo.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Inversão de Controle</strong></td>
+                        <td>Service Locator (DependencyResolver.Current.GetService) ou frameworks manuais de terceiros.</td>
+                        <td>Injeção de dependências embutida no runtime com ciclos de vida Transient, Scoped e Singleton.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Isolamento do Domínio</strong></td>
+                        <td>Entidades dependentes de atributos de validação do ASP.NET e System.Web.</td>
+                        <td>Entidades de domínio puras com validações invariantes em métodos de negócio.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function carregarClientes() {
+            try {
+                const res = await fetch('/api/clientes');
+                const clientes = await res.json();
+
+                const tbody = document.getElementById('tabela-clientes');
+                if (clientes.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary);">Nenhum cliente cadastrado ainda.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = clientes.map(c => `
+                    <tr>
+                        <td style="font-family: var(--font-mono); font-size: 0.8rem;">${c.id.substring(0, 8)}...</td>
+                        <td>${c.nome}</td>
+                        <td>${c.email}</td>
+                        <td style="color: var(--success); font-weight: bold;">R$ ${c.saldoCredito.toFixed(2)}</td>
+                        <td>${c.ativo ? '<span style="color: var(--success);">Sim</span>' : '<span style="color: var(--danger);">Não</span>'}</td>
+                        <td>${new Date(c.criadoEm).toLocaleTimeString()}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                document.getElementById('tabela-clientes').innerHTML = `<tr><td colspan="6" style="color: var(--danger);">Erro: ${err}</td></tr>`;
+            }
+        }
+
+        async function cadastrarCliente() {
+            const nome = document.getElementById('cliente-nome').value;
+            const email = document.getElementById('cliente-email').value;
+            const credito = parseFloat(document.getElementById('cliente-credito').value) || 0;
+            const msg = document.getElementById('status-msg');
+
+            msg.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/clientes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome, email, creditoInicial: credito })
+                });
+
+                const dados = await res.json();
+
+                if (res.ok) {
+                    msg.style.display = 'block';
+                    msg.style.color = 'var(--success)';
+                    msg.innerText = 'Cliente ' + dados.nome + ' cadastrado com sucesso via CadastrarClienteUseCase!';
+                    carregarClientes();
+                } else {
+                    msg.style.display = 'block';
+                    msg.style.color = 'var(--danger)';
+                    msg.innerText = dados.mensagem || 'Falha ao cadastrar cliente.';
+                }
+            } catch (err) {
+                msg.style.display = 'block';
+                msg.style.color = 'var(--danger)';
+                msg.innerText = 'Erro na requisição: ' + err;
+            }
+        }
+
+        window.onload = carregarClientes;
+    </script>
+</body>
+</html>

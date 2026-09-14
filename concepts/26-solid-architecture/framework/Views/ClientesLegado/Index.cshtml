@@ -1,0 +1,137 @@
+@model List<SolidArchitectureDemo.Models.ClienteAcoplado>
+@{
+    ViewBag.Title = "Conceito 26: SOLID e Arquitetura (Legado)";
+}
+
+<header>
+    <div class="header-title-row">
+        <div>
+            <h1>Conceito 26: Princípios SOLID e Arquitetura</h1>
+            <p class="subtitle">Laboratório comparativo: God Controller, acoplamento direto e violação de DIP no .NET Framework 4.8.1</p>
+        </div>
+        <span class="badge-dotnet">.NET Framework 4.8.1 (IIS Express - Porta 7601)</span>
+    </div>
+</header>
+
+<div class="grid">
+    <div class="card">
+        <h2>Cadastro via Controller Monolítico</h2>
+        <p class="subtitle" style="margin-bottom: 1rem;">
+            Neste modelo legado, a Action Cadastrar do controller executa validação manual, regra de unicidade, acesso direto à persistência e envio de notificação.
+        </p>
+
+        @if (ViewBag.Erro != null)
+        {
+            <div style="background-color: rgba(239, 68, 68, 0.2); color: #fca5a5; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
+                @ViewBag.Erro
+            </div>
+        }
+
+        @if (ViewBag.Sucesso != null)
+        {
+            <div style="background-color: rgba(34, 197, 94, 0.2); color: #86efac; padding: 0.75rem; border-radius: 4px; margin-bottom: 1rem;">
+                @ViewBag.Sucesso
+            </div>
+        }
+
+        @using (Html.BeginForm("Cadastrar", "ClientesLegado", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <div class="form-group">
+                <label for="nome">Nome Completo:</label>
+                <input type="text" id="nome" name="nome" class="form-control" value="Lucas Antunes" />
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Corporativo:</label>
+                <input type="email" id="email" name="email" class="form-control" value="lucas.antunes@empresa.com.br" />
+            </div>
+
+            <div class="form-group">
+                <label for="creditoInicial">Crédito Inicial (R$):</label>
+                <input type="text" id="creditoInicial" name="creditoInicial" class="form-control" value="120,00" />
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%;">
+                Cadastrar Cliente (God Controller)
+            </button>
+        }
+    </div>
+
+    <div class="card">
+        <h2>Violações de SOLID no Modelo Legado</h2>
+        <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+            <p style="margin-bottom: 0.75rem;">
+                <strong>Violação de SRP:</strong> O controller possui múltiplos motivos para mudar (alteração nas regras de crédito, mudança no banco de dados ou troca do provedor de e-mail alteram o mesmo arquivo C#).
+            </p>
+            <p style="margin-bottom: 0.75rem;">
+                <strong>Violação de DIP:</strong> Não há abstração de repositório nem interface de notificação. Classes de alto nível instanciam diretamente classes de baixo nível.
+            </p>
+            <p style="margin-bottom: 0.75rem;">
+                <strong>Inexistência de Domínio Puro:</strong> A entidade ClienteAcoplado é um mero portador de dados (modelo anêmico) sem métodos que garantam suas regras invariantes.
+            </p>
+            <p>
+                <strong>Impossibilidade de Testes Unitários:</strong> Para testar se o cadastro valida e-mails duplicados, é necessário rodar a requisição inteira pelo pipeline do ASP.NET.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Clientes Cadastrados na Base Direta do Controller</h2>
+    <table class="comparison-table">
+        <thead>
+            <tr>
+                <th>ID (Guid)</th>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Saldo de Crédito</th>
+                <th>Ativo</th>
+                <th>Data de Cadastro</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in Model)
+            {
+                <tr>
+                    <td style="font-family: var(--font-mono); font-size: 0.8rem;">@c.Id.ToString().Substring(0, 8)...</td>
+                    <td>@c.Nome</td>
+                    <td>@c.Email</td>
+                    <td style="color: var(--accent); font-weight: bold;">R$ @c.SaldoCredito.ToString("N2")</td>
+                    <td>@(c.Ativo ? "Sim" : "Não")</td>
+                    <td>@c.CriadoEm.ToString("HH:mm:ss")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="card">
+    <h2>Limitações Arquiteturais do .NET Framework 4.8.1</h2>
+    <table class="comparison-table">
+        <thead>
+            <tr>
+                <th>Característica</th>
+                <th>Comportamento no .NET Framework 4.8.1</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Injeção de Dependências</strong></td>
+                <td>Ausência de contêiner nativo. Equipes recorriam a Service Locator ou Unity/Ninject manuais.</td>
+            </tr>
+            <tr>
+                <td><strong>Arquitetura em Camadas</strong></td>
+                <td>Geralmente organizada por pastas técnicas (Controllers, Models, Views) sem fronteiras reais de isolamento.</td>
+            </tr>
+            <tr>
+                <td><strong>Testabilidade de Domínio</strong></td>
+                <td>Altamente acoplado ao Entity Framework clássico e dependente de DbContext direto.</td>
+            </tr>
+            <tr>
+                <td><strong>Casos de Uso (Use Cases)</strong></td>
+                <td>Inexistência de padrão de use case; regras de negócio ficavam espalhadas entre controllers e stored procedures.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>

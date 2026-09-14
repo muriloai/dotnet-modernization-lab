@@ -89,6 +89,12 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | [24](concepts/24-csharp-evolution/README.md)  | Evolução da Linguagem C# (7.3 vs 14) | C# 7.3, classes prolixas, switch clássico, sem records e indentação aninhada | C# 14, Records, Pattern Matching avançado, Raw Strings, Collection Expressions e Primary Constructors |
 | [25](concepts/25-async-await/README.md)       | Evolução de Async e Await            | AspNetSynchronizationContext, ConfigureAwait(false), Task.Result deadlocks e Task<List<T>> | Sem SynchronizationContext, ValueTask<T>, IAsyncEnumerable<T>, await foreach e Task.WhenEach |
 
+### Padrões de Projeto e Arquitetura
+
+| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        |
+| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [26](concepts/26-solid-architecture/README.md) | Princípios SOLID e Arquitetura Limpa | God Controllers, new DbContext() direto, DependencyResolver (Service Locator) | Clean Architecture, separação em camadas (Domain/Application/Infra), DI nativa e SOLID |
+
 ---
 
 ## Pré-requisitos para Execução
