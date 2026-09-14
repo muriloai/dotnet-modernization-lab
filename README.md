@@ -82,6 +82,12 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | [22](concepts/22-caching/README.md)           | Estratégias de Cache                 | System.Web.Caching.Cache, OutputCache em MVC, MemoryCache estático e sem tags | IMemoryCache, IDistributedCache, OutputCache middleware com Tags e eviction seletiva |
 | [23](concepts/23-performance/README.md)       | Otimizações de Desempenho            | Alocações com Substring, boxing/unboxing, novos byte[] e GC pauses no Windows | Span<T>, ReadOnlySpan<T>, ArrayPool<T>, Zero-Allocation parsing e GC moderno |
 
+### Evolução da Linguagem C#
+
+| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        |
+| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [24](concepts/24-csharp-evolution/README.md)  | Evolução da Linguagem C# (7.3 vs 14) | C# 7.3, classes prolixas, switch clássico, sem records e indentação aninhada | C# 14, Records, Pattern Matching avançado, Raw Strings, Collection Expressions e Primary Constructors |
+
 ---
 
 ## Pré-requisitos para Execução

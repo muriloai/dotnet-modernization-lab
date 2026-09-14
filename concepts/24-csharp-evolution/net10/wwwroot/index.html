@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Conceito 24: Evolução do C# (C# 7.3 vs C# 14)</title>
+    <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-title-row">
+                <div>
+                    <h1>Conceito 24: Evolução da Linguagem C#</h1>
+                    <p class="subtitle">Laboratório interativo: Records, Pattern Matching avançado, Raw Strings e Primary Constructors no C# 14</p>
+                </div>
+                <span class="badge-dotnet">.NET 10 (Kestrel - Porta 7400)</span>
+            </div>
+        </header>
+
+        <div class="grid">
+            <div class="card">
+                <h2>Simulador de Regras com Pattern Matching</h2>
+                <p class="subtitle" style="margin-bottom: 1rem;">
+                    Altere os dados abaixo para ver como o C# 14 resolve regras de negócio complexas através de switch expressions com padrões de propriedade e relacionais.
+                </p>
+
+                <div class="form-group">
+                    <label for="cliente-nome">Nome do Cliente:</label>
+                    <input type="text" id="cliente-nome" class="form-control" value="Mariana Silva" />
+                </div>
+
+                <div class="grid" style="margin-bottom: 0;">
+                    <div class="form-group">
+                        <label for="cliente-categoria">Categoria:</label>
+                        <select id="cliente-categoria" class="form-control">
+                            <option value="VIP">VIP</option>
+                            <option value="Regular">Regular</option>
+                            <option value="Novo">Novo</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cliente-pontos">Pontos Fidelidade:</label>
+                        <input type="number" id="cliente-pontos" class="form-control" value="650" min="0" />
+                    </div>
+                </div>
+
+                <div class="grid" style="margin-bottom: 0;">
+                    <div class="form-group">
+                        <label for="pedido-total">Valor Total do Pedido (R$):</label>
+                        <input type="number" id="pedido-total" class="form-control" value="1200.00" step="50" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pedido-itens">Qtd Itens no Carrinho:</label>
+                        <input type="number" id="pedido-itens" class="form-control" value="3" min="1" max="10" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="pedido-status">Status do Pedido:</label>
+                    <select id="pedido-status" class="form-control">
+                        <option value="Ativo">Ativo</option>
+                        <option value="Cancelado">Cancelado</option>
+                        <option value="Pendente">Pendente</option>
+                    </select>
+                </div>
+
+                <button class="btn-primary" onclick="avaliarPedido()" style="width: 100%;">
+                    Avaliar com C# 14 (Pattern Matching + Records)
+                </button>
+            </div>
+
+            <div class="card">
+                <h2>Resultado e Diagnóstico C# 14</h2>
+                <div id="resultado-painel" style="display: none;">
+                    <div style="background-color: var(--bg-primary); padding: 1rem; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 1rem;">
+                        <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary);">Regra Ativada via Pattern Matching:</div>
+                        <div id="regra-texto" style="font-size: 1.05rem; font-weight: bold; color: var(--accent); margin-top: 0.25rem;"></div>
+                        <div id="desconto-texto" style="font-size: 0.9rem; color: var(--success); margin-top: 0.5rem;"></div>
+                    </div>
+
+                    <h3 style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Recibo Gerado via Raw String Literal:</h3>
+                    <pre id="recibo-json"></pre>
+                </div>
+
+                <div id="resultado-placeholder" style="padding: 3rem; text-align: center; color: var(--text-secondary); font-size: 0.9rem;">
+                    Preencha os dados e clique no botão para disparar a avaliação.
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Quadro Comparativo: C# 7.3 (.NET Framework 4.8.1) vs C# 14 (.NET 10)</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Conceito de Linguagem</th>
+                        <th>C# 7.3 (.NET Framework 4.8.1)</th>
+                        <th>C# 14 (.NET 10)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Declaração de Modelos DTO</strong></td>
+                        <td>Classes verbosas de 40+ linhas com Equals, GetHashCode e construtores manuais</td>
+                        <td>Uma linha com record: imutabilidade, igualdade estrutural e cópias com 'with'</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Avaliação de Regras</strong></td>
+                        <td>Sequências longas de if-else e switch clássico com case e break</td>
+                        <td>Switch expressions com relational patterns (&gt;= 1000) e property patterns aninhados</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Strings Multilinhas / JSON</strong></td>
+                        <td>Verbatim string @"" exigindo escape de aspas duplas "" e quebras imperfeitas</td>
+                        <td>Raw String Literals """ ... """ preservando aspas e identação exata</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Construtor de Classes</strong></td>
+                        <td>Construtor explícito com cópia manual para campos privados</td>
+                        <td>Primary Constructors diretos na declaração da classe</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Estrutura de Arquivo</strong></td>
+                        <td>Namespaces aninhados { }, classe Program e Main estático</td>
+                        <td>File-scoped namespaces e top-level statements diretos</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function avaliarPedido() {
+            const req = {
+                nomeCliente: document.getElementById('cliente-nome').value,
+                categoriaCliente: document.getElementById('cliente-categoria').value,
+                pontosFidelidade: parseInt(document.getElementById('cliente-pontos').value) || 0,
+                valorTotal: parseFloat(document.getElementById('pedido-total').value) || 0,
+                quantidadeItens: parseInt(document.getElementById('pedido-itens').value) || 1,
+                status: document.getElementById('pedido-status').value
+            };
+
+            try {
+                const res = await fetch('/api/csharp/avaliar-pedido', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(req)
+                });
+                const dados = await res.json();
+
+                document.getElementById('resultado-placeholder').style.display = 'none';
+                document.getElementById('resultado-painel').style.display = 'block';
+
+                document.getElementById('regra-texto').innerText = dados.regraAplicada;
+                document.getElementById('desconto-texto').innerText = 'Desconto Aplicado: R$ ' + dados.descontoConcedido.toFixed(2) + ' | Total Final: R$ ' + dados.pedidoComDesconto.valorTotal.toFixed(2);
+                document.getElementById('recibo-json').innerText = dados.reciboGeradoViaRawString;
+            } catch (err) {
+                alert('Erro ao avaliar pedido: ' + err);
+            }
+        }
+    </script>
+</body>
+</html>

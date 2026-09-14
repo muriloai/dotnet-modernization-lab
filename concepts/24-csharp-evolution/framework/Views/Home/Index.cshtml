@@ -1,0 +1,126 @@
+@{
+    ViewBag.Title = "Conceito 24: Evolução do C# (Legado C# 7.3)";
+    bool sucesso = ViewBag.SucessoAvaliacao ?? false;
+}
+
+<header>
+    <div class="header-title-row">
+        <div>
+            <h1>Conceito 24: Evolução da Linguagem C#</h1>
+            <p class="subtitle">Laboratório comparativo: Classes prolixas, if-else em cascata e formatação manual em C# 7.3</p>
+        </div>
+        <span class="badge-dotnet">.NET Framework 4.8.1 (IIS Express - Porta 7401)</span>
+    </div>
+</header>
+
+<div class="grid">
+    <div class="card">
+        <h2>Simulador de Regras em C# 7.3</h2>
+        <p class="subtitle" style="margin-bottom: 1rem;">
+            No C# 7.3, a resolução de regras de negócio exigia sequências encadeadas de if-else com validações manuais contra referências nulas e métodos auxiliares para clonagem de objetos.
+        </p>
+
+        @using (Html.BeginForm("AvaliarPedido", "Home", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <div class="form-group">
+                <label for="nomeCliente">Nome do Cliente:</label>
+                <input type="text" id="nomeCliente" name="nomeCliente" class="form-control" value="Mariana Silva" />
+            </div>
+
+            <div class="grid" style="margin-bottom: 0;">
+                <div class="form-group">
+                    <label for="categoriaCliente">Categoria:</label>
+                    <select id="categoriaCliente" name="categoriaCliente" class="form-control">
+                        <option value="VIP">VIP</option>
+                        <option value="Regular">Regular</option>
+                        <option value="Novo">Novo</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="pontosFidelidade">Pontos Fidelidade:</label>
+                    <input type="number" id="pontosFidelidade" name="pontosFidelidade" class="form-control" value="650" min="0" />
+                </div>
+            </div>
+
+            <div class="grid" style="margin-bottom: 0;">
+                <div class="form-group">
+                    <label for="valorTotal">Valor Total (R$):</label>
+                    <input type="text" id="valorTotal" name="valorTotal" class="form-control" value="1200,00" />
+                </div>
+
+                <div class="form-group">
+                    <label for="quantidadeItens">Qtd Itens:</label>
+                    <input type="number" id="quantidadeItens" name="quantidadeItens" class="form-control" value="3" min="1" max="10" />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="status">Status:</label>
+                <select id="status" name="status" class="form-control">
+                    <option value="Ativo">Ativo</option>
+                    <option value="Cancelado">Cancelado</option>
+                    <option value="Pendente">Pendente</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%;">
+                Avaliar com C# 7.3 (if-else tradicional)
+            </button>
+        }
+    </div>
+
+    <div class="card">
+        <h2>Resultado da Avaliação</h2>
+        @if (sucesso)
+        {
+            <div style="background-color: var(--bg-primary); padding: 1rem; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 1rem;">
+                <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary);">Regra Ativada (if-else):</div>
+                <div style="font-size: 1.05rem; font-weight: bold; color: var(--accent); margin-top: 0.25rem;">@ViewBag.RegraAplicada</div>
+                <div style="font-size: 0.9rem; color: var(--success); margin-top: 0.5rem;">
+                    Desconto Concedido: R$ @ViewBag.DescontoConcedido.ToString("N2") | Total Final: R$ @ViewBag.ValorFinal.ToString("N2")
+                </div>
+            </div>
+
+            <h3 style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Recibo Gerado via string.Format (com escape de aspas):</h3>
+            <pre>@ViewBag.ReciboJson</pre>
+        }
+        else
+        {
+            <div style="padding: 3rem; text-align: center; color: var(--text-secondary); font-size: 0.9rem;">
+                Envie o formulário para avaliar o pedido no motor legado em C# 7.3.
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card">
+    <h2>Limitações de Sintaxe no C# 7.3</h2>
+    <table class="comparison-table">
+        <thead>
+            <tr>
+                <th>Recurso Ausente</th>
+                <th>Impacto no Código Legado (.NET Framework 4.8.1)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Records</strong></td>
+                <td>Obrigatoriedade de escrever classes manuais com Equals, GetHashCode e ToString para suporte a igualdade por valor.</td>
+            </tr>
+            <tr>
+                <td><strong>Switch Expressions</strong></td>
+                <td>Código imperativo com switch extenso ou if-else aninhados, elevando a complexidade ciclomática.</td>
+            </tr>
+            <tr>
+                <td><strong>Raw String Literals</strong></td>
+                <td>JSON ou strings multilinhas exigem escape complexo de aspas duplas ("") e formatação frágil com string.Format.</td>
+            </tr>
+            <tr>
+                <td><strong>Nullable Reference Types</strong></td>
+                <td>Compilador não avisa sobre possíveis NullReferenceException, forçando validações if (x == null) repetidas em todo o código.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
