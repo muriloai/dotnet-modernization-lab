@@ -1,0 +1,213 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conceito 30 - Publicação e Deploy (.NET 10)</title>
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Publicação e Deploy</h1>
+      <p class="subtitle">Estratégias de empacotamento com dotnet publish, Self-Contained, Single-File e Containers Chiseled no .NET 10</p>
+    </header>
+
+    <!-- Telemetria do Host Atual -->
+    <div class="card">
+      <h2>Ambiente de Execucao Atual (Host Telemetry)</h2>
+      <div class="telemetry-grid">
+        <div class="telemetry-box">
+          <div class="telemetry-val" id="tel-os">Carregando...</div>
+          <div class="telemetry-label">Sistema Operacional</div>
+        </div>
+        <div class="telemetry-box">
+          <div class="telemetry-val" id="tel-arch">Carregando...</div>
+          <div class="telemetry-label">Arquitetura</div>
+        </div>
+        <div class="telemetry-box">
+          <div class="telemetry-val" id="tel-framework">Carregando...</div>
+          <div class="telemetry-label">Framework Runtime</div>
+        </div>
+        <div class="telemetry-box">
+          <div class="telemetry-val" id="tel-memoria">0 MB</div>
+          <div class="telemetry-label">Memoria do Processo</div>
+        </div>
+        <div class="telemetry-box">
+          <div class="telemetry-val" id="tel-uptime">0 s</div>
+          <div class="telemetry-label">Tempo de Atividade</div>
+        </div>
+        <div class="telemetry-box">
+          <div class="telemetry-val" id="tel-modo">Kestrel</div>
+          <div class="telemetry-label">Modo de Servidor</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Gerador de Comandos dotnet publish -->
+      <div class="card">
+        <h2>Gerador de Comandos de Publicacao</h2>
+
+        <div class="control-group">
+          <label for="config-build">Configuracao</label>
+          <select id="config-build" onchange="atualizarComando()">
+            <option value="Release" selected>Release (Otimizado para Producao)</option>
+            <option value="Debug">Debug (Com simbolos de depuracao)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="target-rid">Runtime Identifier (RID)</label>
+          <select id="target-rid" onchange="atualizarComando()">
+            <option value="portable">Portavel (Qualquer SO com .NET 10)</option>
+            <option value="linux-x64" selected>Linux x64 (Ubuntu, Debian, Alpine)</option>
+            <option value="linux-arm64">Linux ARM64 (AWS Graviton, Raspberry Pi)</option>
+            <option value="win-x64">Windows x64 (Windows Server, Desktop)</option>
+            <option value="osx-arm64">macOS ARM64 (Apple Silicon M1/M2/M3/M4)</option>
+          </select>
+        </div>
+
+        <div class="checkbox-row">
+          <label class="checkbox-item">
+            <input type="checkbox" id="chk-self-contained" onchange="atualizarComando()" checked>
+            Self-Contained (SCD)
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="chk-single-file" onchange="atualizarComando()" checked>
+            Single-File Executable
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="chk-r2r" onchange="atualizarComando()">
+            ReadyToRun (R2R)
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="chk-compression" onchange="atualizarComando()">
+            Compressao de Binario
+          </label>
+        </div>
+
+        <div class="command-box" id="comando-gerado">
+          dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -o ./dist
+        </div>
+
+        <div style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-secondary);" id="artefato-esperado">
+          Artefato gerado: dist/PublishDeployDemo (Binario unico)
+        </div>
+      </div>
+
+      <!-- Dockerfile Chiseled -->
+      <div class="card">
+        <h2>Dockerfile Chiseled (.NET 10)</h2>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+          Multi-stage build gerando uma imagem ultra-compacta (< 100 MB) e sem vulnerabilidades de shell interativo.
+        </p>
+        <pre class="code-container" style="background: #0f172a; border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem; font-family: monospace; font-size: 0.75rem; color: var(--text-primary); max-height: 260px; overflow-y: auto;">FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY ["PublishDeployDemo.csproj", "./"]
+RUN dotnet restore
+COPY . .
+RUN dotnet publish -c Release -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+USER $APP_UID
+EXPOSE 8080
+ENTRYPOINT ["dotnet", "PublishDeployDemo.dll"]</pre>
+      </div>
+    </div>
+
+    <!-- Comparativo de Modos -->
+    <div class="card">
+      <h2>Comparativo de Estratégias de Empacotamento</h2>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Modo de Publicacao</th>
+              <th>Tamanho Estimado</th>
+              <th>Tempo de Inicializacao</th>
+              <th>Portabilidade</th>
+              <th>Descricao Pratica</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-comparativo">
+            <tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">Carregando comparativo...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function carregarDiagnostico() {
+      try {
+        const res = await fetch('/api/publishinfo/diagnostico');
+        if (res.ok) {
+          const d = await res.json();
+          document.getElementById('tel-os').innerText = d.sistemaOperacional;
+          document.getElementById('tel-arch').innerText = d.arquitetura;
+          document.getElementById('tel-framework').innerText = d.framework;
+          document.getElementById('tel-memoria').innerText = d.memoriaAlocadaMb + ' MB';
+          document.getElementById('tel-uptime').innerText = d.tempoAtividadeSegundos + ' s';
+          document.getElementById('tel-modo').innerText = d.modoExecucao;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function carregarComparativo() {
+      try {
+        const res = await fetch('/api/publishinfo/comparativo');
+        if (res.ok) {
+          const lista = await res.json();
+          const tbody = document.getElementById('tabela-comparativo');
+          tbody.innerHTML = lista.map(item => `
+            <tr>
+              <td style="font-weight: 600; color: var(--accent-cyan);">${item.modo}</td>
+              <td>${item.tamanhoAproximado}</td>
+              <td>${item.tempoInicializacao}</td>
+              <td style="font-size: 0.8rem; color: var(--text-secondary);">${item.portabilidade}</td>
+              <td>${item.descricao}</td>
+            </tr>
+          `).join('');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function atualizarComando() {
+      const payload = {
+        configuracao: document.getElementById('config-build').value,
+        rid: document.getElementById('target-rid').value,
+        selfContained: document.getElementById('chk-self-contained').checked,
+        singleFile: document.getElementById('chk-single-file').checked,
+        readyToRun: document.getElementById('chk-r2r').checked,
+        enableCompression: document.getElementById('chk-compression').checked
+      };
+
+      try {
+        const res = await fetch('/api/publishinfo/gerar-comando', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('comando-gerado').innerText = data.comandoGerado;
+          document.getElementById('artefato-esperado').innerText = 'Artefato esperado: ' + data.artefatoFinalEsperado;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    carregarDiagnostico();
+    carregarComparativo();
+    setInterval(carregarDiagnostico, 2000);
+  </script>
+</body>
+</html>

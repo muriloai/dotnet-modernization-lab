@@ -1,0 +1,56 @@
+﻿@model PublishDeployDemo.Models.DeployLegadoInfoDto
+@{
+    ViewBag.Title = "Publicacao e Deploy Legado";
+}
+
+<header>
+    <h1>Publicacao e Deploy no .NET Framework 4.8.1</h1>
+    <p class="subtitle">Demonstracao com WebDeploy, MSDeploy, pastas do IIS e transformacoes XDT</p>
+</header>
+
+<div class="card">
+    <h2>Informacoes do Ambiente Legado</h2>
+    <div class="grid-info">
+        <div class="info-item">
+            <div class="info-label">Sistema Operacional</div>
+            <div class="info-val">@Model.SistemaOperacional</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Servidor Web / Processo</div>
+            <div class="info-val">@Model.ServidorWeb</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Ambiente Atual (Web.config)</div>
+            <div class="info-val">@Model.AmbienteConfigurado</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Pasta Alvo do IIS</div>
+            <div class="info-val" style="font-size: 0.9rem;">@Model.CaminhoDestinoIIS</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Versao do CLR</div>
+            <div class="info-val">@Model.VersaoClr</div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Memoria de Processo</div>
+            <div class="info-val">@Model.MemoriaWorkingSetMb MB</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Comando de Publicacao Legado (MSDeploy / MSBuild)</h2>
+    <pre>msbuild PublishDeployDemo.csproj /p:DeployOnBuild=true /p:PublishProfile=FolderProfile /p:Configuration=Release</pre>
+</div>
+
+<div class="card">
+    <h2>Transformacao XDT (Web.Release.config)</h2>
+    <pre>&lt;configuration xmlns:xdt="http://schemas.microsoft.com/XML-Document-Transform"&gt;
+  &lt;appSettings&gt;
+    &lt;add key="Ambiente" value="Producao" xdt:Transform="SetAttributes" xdt:Locator="Match(key)" /&gt;
+  &lt;/appSettings&gt;
+  &lt;system.web&gt;
+    &lt;compilation xdt:Transform="RemoveAttributes(debug)" /&gt;
+  &lt;/system.web&gt;
+&lt;/configuration&gt;</pre>
+</div>

@@ -98,6 +98,12 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | [28](concepts/28-mediator-cqrs/README.md)     | Mediator e CQRS                      | Fat Services monolíticos, acoplamento direto controller-serviço e consultas sem separação | CQRS, Commands e Queries segregados, Mediator com Pipeline Behaviors e Vertical Slices |
 | [29](concepts/29-api-design/README.md)       | Padrões de Design de API             | Rotas manuais v1/v2, envelopes ad-hoc de resposta, Swashbuckle 5.x e ausência de RFC 7807 | Versionamento declarativo (Asp.Versioning), RFC 7807 ProblemDetails, OpenAPI nativo e HATEOAS |
 
+### Publicação e Ambientes
+
+| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        |
+| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [30](concepts/30-publish-deployment/README.md) | Publicação e Deploy                  | WebDeploy, msdeploy, pastas do IIS, GAC, containers Windows de 8 GB e transformações XDT | dotnet publish, Self-Contained, Single-File, R2R, containers Linux mínimos (Chiseled) e cross-platform |
+
 ---
 
 ## Pré-requisitos para Execução
