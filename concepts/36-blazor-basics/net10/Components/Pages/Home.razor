@@ -1,0 +1,202 @@
+@page "/"
+@rendermode InteractiveServer
+
+<PageTitle>Conceito 36: Blazor Basics no .NET 10</PageTitle>
+
+<div class="container">
+    <header>
+        <span class="badge">Moderno - .NET 10 & Blazor</span>
+        <h1>Componentes Blazor vs ASP.NET Web Forms</h1>
+        <p class="subtitle">
+            Renderizacao reativa com C#, diffs binarios no DOM Virtual via WebSocket, zero ViewState e sem recarregamento de pagina.
+        </p>
+    </header>
+
+    <div class="grid">
+        <!-- Card 1: Contador Reativo sem PostBack -->
+        <div class="card">
+            <div class="card-title">Contador Reativo em Memoria</div>
+            <p style="color: var(--text-secondary); font-size: 0.85rem;">
+                No ASP.NET Web Forms, cada clique disparava um HTTP POST completo com envio do ViewState e reconstrucao do ciclo de vida da pagina. No Blazor, o estado e mantido em memoria no servidor e apenas o diff do DOM e enviado.
+            </p>
+
+            <div class="counter-display">@currentCount</div>
+
+            <div class="btn-group">
+                <button class="blazor-btn" @onclick="IncrementCount">+ Incrementar</button>
+                <button class="blazor-btn secondary" @onclick="DecrementCount">- Decrementar</button>
+                <button class="blazor-btn danger" @onclick="ResetCount">Zerar</button>
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-row">
+                    <span class="stat-label">Total de Renders:</span>
+                    <span class="stat-value">@renderCount</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Tamanho do Diff Transmitido:</span>
+                    <span class="stat-value" style="color: var(--accent-success);">~88 bytes (Binary WebSocket)</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">ViewState Enviado:</span>
+                    <span class="stat-value" style="color: var(--accent-success);">0 bytes (Inexistente no Blazor)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Lista Interativa com Data Binding Bidirecional -->
+        <div class="card">
+            <div class="card-title">Gerenciador de Tarefas (@tasks.Count(t => !t.IsDone) pendentes)</div>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
+                Data binding bidirecional moderno via @@bind. Sem necessidade de GridView, DataBind() ou mangled IDs.
+            </p>
+
+            <div class="todo-input-group">
+                <input class="todo-input" placeholder="Nova tarefa em C#..." @bind="newTaskTitle" @onkeyup="HandleKeyUp" />
+                <button class="blazor-btn" @onclick="AddTask">Adicionar</button>
+            </div>
+
+            <ul class="todo-list">
+                @foreach (var item in tasks)
+                {
+                    <li class="todo-item @(item.IsDone ? "done" : "")">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" @bind="item.IsDone" />
+                            <span>@item.Title</span>
+                        </label>
+                        <button class="blazor-btn danger" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" @onclick="() => RemoveTask(item)">Excluir</button>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+
+    <!-- Card 3: Comparativo de Payload de Rede -->
+    <div class="card" style="margin-bottom: 2rem;">
+        <div class="card-title">Comparativo de Sobrecarga de Rede por Interacao</div>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">
+            Analise real de bytes trafegados na rede para uma interacao simples de usuario (exemplo: clicar em um botao para alterar um texto na tela):
+        </p>
+
+        <div class="comparison-bar-container">
+            <div class="bar-label">
+                <span>ASP.NET Web Forms (.NET Framework 4.8.1) - Postback + __VIEWSTATE</span>
+                <span style="color: #ef4444; font-weight: bold;">~78.400 bytes</span>
+            </div>
+            <div class="bar-bg">
+                <div class="bar-fill-webforms">HTML Completo + __VIEWSTATE Base64 (~78 KB)</div>
+            </div>
+        </div>
+
+        <div class="comparison-bar-container">
+            <div class="bar-label">
+                <span>Blazor Server (.NET 10) - RenderTree Binary Diff via SignalR</span>
+                <span style="color: var(--accent-success); font-weight: bold;">~110 bytes (Reducao de 99.8%)</span>
+            </div>
+            <div class="bar-bg">
+                <div class="bar-fill-blazor">Diff</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 4: Tabela Comparativa -->
+    <div class="card">
+        <div class="card-title">Diferencas Tecnicas: ASP.NET Web Forms vs Blazor no .NET 10</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Aspecto Tecnico</th>
+                    <th>ASP.NET Web Forms (.NET Framework 4.8.1)</th>
+                    <th>Blazor (.NET 10)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Modelo de Interacao</td>
+                    <td>PostBack com recarregamento completo da pagina HTTP POST.</td>
+                    <td>Single Page Application (SPA) reativa com renderizacao parcial no DOM Virtual.</td>
+                </tr>
+                <tr>
+                    <td>Gerenciamento de Estado</td>
+                    <td>Campo oculto __VIEWSTATE trafegado de ida e volta na rede em Base64.</td>
+                    <td>Estado em memoria no servidor (Server) ou na memoria do navegador (WebAssembly). Zero ViewState.</td>
+                </tr>
+                <tr>
+                    <td>Linguagem de Interface</td>
+                    <td>Controles de servidor proprietarios (&lt;asp:Button&gt;, &lt;asp:GridView&gt;) com IDs distorcidos.</td>
+                    <td>HTML5 semantico padrao combinado com componentes C# tipados (.razor).</td>
+                </tr>
+                <tr>
+                    <td>Ciclo de Vida</td>
+                    <td>Excessivamente complexo (Page_Init, Page_Load, Control Events, PreRender, SaveViewState).</td>
+                    <td>Direto e intuitivo (OnInitializedAsync, OnParametersSetAsync, ShouldRender).</td>
+                </tr>
+                <tr>
+                    <td>Hospedagem e Plataforma</td>
+                    <td>Exclusivo de Windows e acoplado visceralmente ao IIS (System.Web).</td>
+                    <td>Multiplataforma (Linux, macOS, Windows), Kestrel e containers Docker leves.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private int currentCount = 0;
+    private int renderCount = 0;
+    private string newTaskTitle = "";
+
+    private record TaskItem(string Title)
+    {
+        public bool IsDone { get; set; } = false;
+    }
+
+    private List<TaskItem> tasks = new()
+    {
+        new TaskItem("Modernizar projeto legado para .NET 10"),
+        new TaskItem("Eliminar o ViewState e postbacks lentos"),
+        new TaskItem("Aprender data binding reativo com Blazor")
+    };
+
+    private void IncrementCount()
+    {
+        currentCount++;
+        renderCount++;
+    }
+
+    private void DecrementCount()
+    {
+        currentCount--;
+        renderCount++;
+    }
+
+    private void ResetCount()
+    {
+        currentCount = 0;
+        renderCount++;
+    }
+
+    private void AddTask()
+    {
+        if (!string.IsNullOrWhiteSpace(newTaskTitle))
+        {
+            tasks.Add(new TaskItem(newTaskTitle.Trim()));
+            newTaskTitle = "";
+            renderCount++;
+        }
+    }
+
+    private void HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            AddTask();
+        }
+    }
+
+    private void RemoveTask(TaskItem item)
+    {
+        tasks.Remove(item);
+        renderCount++;
+    }
+}

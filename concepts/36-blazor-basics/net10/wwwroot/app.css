@@ -1,0 +1,261 @@
+/* Estilo Moderno do Laboratorio de Blazor */
+:root {
+  --bg-primary: #0f172a;
+  --bg-card: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --accent: #38bdf8;
+  --accent-purple: #c084fc;
+  --accent-success: #10b981;
+  --accent-danger: #ef4444;
+  --border-color: #334155;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  padding: 2rem 1rem;
+}
+
+.container {
+  max-width: 1050px;
+  margin: 0 auto;
+}
+
+header {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  background-color: #0369a1;
+  color: #e0f2fe;
+  margin-bottom: 0.75rem;
+}
+
+h1 {
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+
+p.subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--accent);
+}
+
+.btn-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+button.blazor-btn {
+  background-color: var(--accent);
+  color: #0f172a;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 0.375rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+button.blazor-btn:hover {
+  background-color: #0ea5e9;
+}
+
+button.blazor-btn.secondary {
+  background-color: #334155;
+  color: #fff;
+}
+
+button.blazor-btn.secondary:hover {
+  background-color: #475569;
+}
+
+button.blazor-btn.danger {
+  background-color: var(--accent-danger);
+  color: #fff;
+}
+
+button.blazor-btn.danger:hover {
+  background-color: #dc2626;
+}
+
+.stat-box {
+  background: #0f172a;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.stat-row:last-child {
+  margin-bottom: 0;
+}
+
+.stat-label {
+  color: var(--text-secondary);
+}
+
+.stat-value {
+  font-weight: 700;
+  color: #fff;
+}
+
+.counter-display {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--accent);
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.todo-input-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.todo-input {
+  flex-grow: 1;
+  padding: 0.6rem 0.8rem;
+  background-color: #0f172a;
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.todo-list {
+  list-style: none;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.8rem;
+  background-color: #0f172a;
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+  margin-bottom: 0.5rem;
+}
+
+.todo-item.done {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.comparison-bar-container {
+  margin-bottom: 1rem;
+}
+
+.bar-label {
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+  display: flex;
+  justify-content: space-between;
+}
+
+.bar-bg {
+  height: 24px;
+  background-color: #0f172a;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.bar-fill-webforms {
+  height: 100%;
+  width: 100%;
+  background-color: #ef4444;
+  display: flex;
+  align-items: center;
+  padding-left: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.bar-fill-blazor {
+  height: 100%;
+  width: 1.2%;
+  min-width: 32px;
+  background-color: var(--accent-success);
+  display: flex;
+  align-items: center;
+  padding-left: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #000;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+th, td {
+  border: 1px solid var(--border-color);
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+
+th {
+  background-color: #0f172a;
+  color: var(--accent);
+}
+
+tr:nth-child(even) {
+  background-color: #172033;
+}

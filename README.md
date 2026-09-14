@@ -113,6 +113,7 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | [33](concepts/33-native-aot/README.md)       | Native AOT e Trimming                | RyuJIT em runtime, NGen local frágil, Reflection irrestrita e aquecimento inicial alto | Compilação nativa Ahead-of-Time (<PublishAot>), Trimming agressivo, inicialização em <15ms e memória mínima |
 | [34](concepts/34-hybrid-cache/README.md)     | HybridCache                          | MemoryCache isolado, sem proteção a Cache Stampede, serialização manual e sem tags | Microsoft.Extensions.Caching.Hybrid, L1/L2 unificados, trava contra Cache Stampede e Tag Invalidation |
 | [35](concepts/35-opentelemetry/README.md)    | OpenTelemetry e Aspire               | TraceSource, PerfMon do Windows, CorrelationId manual e logs desestruturados | ActivitySource, System.Diagnostics.Metrics, W3C traceparent e .NET Aspire |
+| [36](concepts/36-blazor-basics/README.md)    | Blazor                               | ASP.NET Web Forms, ViewState pesado, postbacks completos e acoplamento IIS | Componentes C# .razor, DOM Virtual, zero ViewState, data binding e SPA reativa |
 
 ---
 

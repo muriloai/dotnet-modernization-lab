@@ -1,0 +1,27 @@
+<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="Site.master.cs" Inherits="WebFormsLegadoDemo.SiteMaster" %>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head runat="server">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ASP.NET Web Forms (.NET Framework 4.8.1)</title>
+    <link href="~/Site.css" rel="stylesheet" type="text/css" />
+    <asp:ContentPlaceHolder ID="HeadContent" runat="server">
+    </asp:ContentPlaceHolder>
+</head>
+<body>
+    <form id="form1" runat="server">
+        <div class="container">
+            <header>
+                <span class="badge-legado">Legado - ASP.NET Web Forms 4.8.1</span>
+                <h1 style="margin-top: 0.5rem;">System.Web.UI.Page & PostBack</h1>
+                <p style="color: #64748b;">
+                    Demonstracao do modelo Web Forms classico: campos ocultos __VIEWSTATE, ciclo de vida complexo (Page_Load/SaveViewState) e recarregamento completo da pagina em cada acao.
+                </p>
+            </header>
+            <asp:ContentPlaceHolder ID="MainContent" runat="server">
+            </asp:ContentPlaceHolder>
+        </div>
+    </form>
+</body>
+</html>

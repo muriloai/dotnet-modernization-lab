@@ -1,0 +1,68 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8fafc;
+  color: #0f172a;
+  margin: 0;
+  padding: 1.5rem;
+}
+.container {
+  max-width: 950px;
+  margin: 0 auto;
+}
+header {
+  border-bottom: 2px solid #cbd5e1;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+.badge-legado {
+  background-color: #991b1b;
+  color: #fff;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: bold;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.card {
+  background-color: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.card-header {
+  font-size: 1.15rem;
+  font-weight: bold;
+  color: #0284c7;
+  margin-bottom: 0.75rem;
+}
+.btn {
+  background-color: #0284c7;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-right: 0.5rem;
+}
+.btn:hover {
+  background-color: #0369a1;
+}
+.btn-danger {
+  background-color: #b91c1c;
+}
+.counter-box {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #0284c7;
+  margin: 0.5rem 0;
+}
+.stat-box {
+  background-color: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 0.75rem;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
