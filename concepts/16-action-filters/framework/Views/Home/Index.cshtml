@@ -1,0 +1,125 @@
+@{
+    ViewBag.Title = "Painel de Testes de Filtros Legados";
+}
+
+<div style="margin-bottom: 2rem;">
+    <h2>Interceptação com ActionFilterAttribute no Web API 2</h2>
+    <p class="subtitle">
+        Demonstração de medição de tempo de execução e validação de segurança com curto-circuito
+        utilizando a hierarquia clássica <code>System.Web.Http.Filters.ActionFilterAttribute</code>.
+    </p>
+</div>
+
+<div class="grid-2">
+    <!-- Coluna de Testes -->
+    <div class="card">
+        <h3>Execução de Requisições Filtradas</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Selecione uma ação para testar o comportamento dos filtros:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <button class="btn btn-primary" onclick="executarChamada('/api/relatorios/publico', false)">
+                1. Relatório Público
+                <small>Interceptado por MedirTempoExecucaoFilter (injeta X-Tempo-Execucao-Ms).</small>
+            </button>
+
+            <button class="btn btn-primary" onclick="executarChamada('/api/relatorios/financeiro-protegido', true)">
+                2. Relatório Protegido COM Chave Válida (200 OK)
+                <small>Envia cabeçalho X-API-Key validado pelo filtro legado.</small>
+            </button>
+
+            <button class="btn btn-danger" onclick="executarChamada('/api/relatorios/financeiro-protegido', false)">
+                3. Relatório Protegido SEM Chave (Curto-circuito 401)
+                <small>ValidarApiKeyLegadoAttribute interrompe a chamada antes da Action.</small>
+            </button>
+
+            <button class="btn btn-warning" onclick="executarChamada('/api/relatorios/processamento-pesado', false)">
+                4. Processamento Pesado Simulado
+                <small>Ação com atraso de 120ms para verificar o cabeçalho de latência.</small>
+            </button>
+        </div>
+    </div>
+
+    <!-- Coluna de Explicação Técnica -->
+    <div class="card">
+        <h3>Limitações Arquiteturais no Legado</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Dificuldades históricas dos Action Filters no .NET Framework 4.8.1:
+        </p>
+
+        <ul style="font-size: 0.88rem; line-height: 1.7; padding-left: 1.25rem; color: var(--text); margin-bottom: 1.25rem;">
+            <li><strong>Ausência de DI em Atributos:</strong> Como os atributos são instanciados pelo runtime sem passar pelo container, não era possível receber serviços no construtor.</li>
+            <li><strong>Dois Métodos Separados:</strong> A medição de tempo precisava guardar o <code>Stopwatch</code> no dicionário <code>Request.Properties</code> em <code>OnActionExecuting</code> para lê-lo em <code>OnActionExecuted</code>.</li>
+            <li><strong>Duplicidade de Tipos:</strong> Existiam duas classes <code>ActionFilterAttribute</code> diferentes e incompatíveis (uma para MVC e outra para Web API).</li>
+        </ul>
+
+        <div style="background: #f8f9fa; padding: 1rem; border-radius: 6px; border: 1px solid var(--border); font-size: 0.85rem;">
+            <strong>Evolução no .NET 10:</strong> No .NET 10, o <code>[ServiceFilter]</code> permite injeção de dependência limpa no construtor do filtro e o <code>IAsyncActionFilter</code> unifica o início e o término em um único método com <code>await next()</code>.
+        </div>
+    </div>
+</div>
+
+<!-- Console de Resultados -->
+<div class="result-area">
+    <div class="result-header">
+        <div>
+            <strong>Chamada:</strong> <span id="reqInfo">-</span>
+        </div>
+        <div>
+            <span id="statusInfo" style="font-weight: bold;">-</span>
+        </div>
+    </div>
+
+    <div style="margin-bottom: 0.5rem; font-size: 0.82rem; color: #a0a0b0;">
+        <div><strong>Cabeçalhos HTTP Injetados pelo Filtro:</strong></div>
+        <div id="headersInfo" style="margin-top: 0.2rem; font-family: monospace; color: #68d391;">-</div>
+    </div>
+
+    <div>
+        <strong style="font-size: 0.82rem; color: #a0a0b0;">Corpo da Resposta (JSON):</strong>
+        <pre><code id="payloadInfo">// Clique em uma das operações acima para visualizar a resposta.</code></pre>
+    </div>
+</div>
+
+<script>
+    async function executarChamada(url, enviarApiKey) {
+        var reqEl = document.getElementById('reqInfo');
+        var statusEl = document.getElementById('statusInfo');
+        var headersEl = document.getElementById('headersInfo');
+        var payloadEl = document.getElementById('payloadInfo');
+
+        reqEl.textContent = 'GET ' + url + (enviarApiKey ? ' [com X-API-Key]' : ' [sem X-API-Key]');
+        statusEl.textContent = 'Enviando...';
+        headersEl.textContent = 'Aguardando cabeçalhos...';
+        payloadEl.textContent = 'Processando requisição...';
+
+        var headers = { 'Accept': 'application/json' };
+        if (enviarApiKey) {
+            headers['X-API-Key'] = 'CHAVE-SECRETA-LAB-16';
+        }
+
+        try {
+            var res = await fetch(url, { headers: headers });
+            statusEl.textContent = res.status + ' ' + res.statusText;
+
+            var headersFiltro = [];
+            var tempo = res.headers.get('x-tempo-execucao-ms');
+            var auditoria = res.headers.get('x-filtro-auditoria');
+
+            if (tempo) headersFiltro.push('X-Tempo-Execucao-Ms: ' + tempo + 'ms');
+            if (auditoria) headersFiltro.push('X-Filtro-Auditoria: ' + auditoria);
+
+            headersEl.textContent = headersFiltro.length > 0
+                ? headersFiltro.join(' | ')
+                : 'Nenhum cabeçalho customizado injetado (bloqueado por curto-circuito).';
+
+            var json = await res.json();
+            payloadEl.textContent = JSON.stringify(json, null, 2);
+        } catch (err) {
+            statusEl.textContent = 'Erro';
+            headersEl.textContent = '-';
+            payloadEl.textContent = err.toString();
+        }
+    }
+</script>

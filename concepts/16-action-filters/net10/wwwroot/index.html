@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lab 16: Action Filters (.NET 10)</title>
+    <link rel="stylesheet" href="css/site.css" />
+</head>
+<body>
+    <div class="container">
+        <header style="margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+            <span class="badge badge-modern">ASP.NET Core (.NET 10 LTS) - Porta 6600</span>
+            <h1>Lab 16: Action Filters e Interceptadores</h1>
+            <p class="subtitle">
+                Demonstração de IAsyncActionFilter, ServiceFilter com injeção de dependências no construtor,
+                curto-circuito de pipeline e Endpoint Filters funcionais em Minimal APIs.
+            </p>
+        </header>
+
+        <div class="grid-2">
+            <!-- Coluna 1: Controllers -->
+            <div class="card">
+                <h2>1. Action Filters em Controllers</h2>
+                <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Testes práticos de filtros assíncronos e injeção de dependência via [ServiceFilter]:
+                </p>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="executarChamada('/api/relatorios/publico')">
+                        1. Relatório Público
+                        <small>Interceptado por TempoExecucaoActionFilter (injeta header X-Tempo-Execucao-Ms).</small>
+                    </button>
+
+                    <button class="btn btn-success" onclick="executarChamada('/api/relatorios/financeiro-protegido', true)">
+                        2. Relatório Protegido COM Chave Válida (200 OK)
+                        <small>Envia X-API-Key: CHAVE-SECRETA-LAB-16 validada pelo filtro com DI.</small>
+                    </button>
+
+                    <button class="btn btn-danger" onclick="executarChamada('/api/relatorios/financeiro-protegido', false)">
+                        3. Relatório Protegido SEM Chave (Curto-circuito 401)
+                        <small>O filtro aborta a execução antes da Action ser chamada.</small>
+                    </button>
+
+                    <button class="btn btn-warning" onclick="executarChamada('/api/relatorios/processamento-pesado')">
+                        4. Processamento Pesado Simulado
+                        <small>Ação com atraso proposital de 120ms para verificar a medição do filtro.</small>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Coluna 2: Minimal APIs e Explicações -->
+            <div class="card">
+                <h2>2. Endpoint Filters em Minimal APIs</h2>
+                <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Alternativa moderna sem reflexão de atributos através de AddEndpointFilter:
+                </p>
+
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="executarChamada('/api/v2/relatorios/financeiro-protegido', true)">
+                        5. Minimal API COM Chave Válida (200 OK)
+                        <small>EndpointFilter executa e invoca await next(context).</small>
+                    </button>
+
+                    <button class="btn btn-danger" onclick="executarChamada('/api/v2/relatorios/financeiro-protegido', false)">
+                        6. Minimal API SEM Chave (Curto-circuito 401)
+                        <small>EndpointFilter interrompe a requisição com Results.Json 401.</small>
+                    </button>
+                </div>
+
+                <div style="margin-top: 1.25rem; background: #f8f9fa; padding: 0.85rem; border-radius: 6px; border: 1px solid var(--border); font-size: 0.82rem; line-height: 1.6;">
+                    <strong style="color: var(--dark);">Diferenças Cruciais:</strong>
+                    <ul style="padding-left: 1.25rem; margin-top: 0.35rem; color: var(--text);">
+                        <li><strong>ServiceFilter:</strong> O filtro é resolvido pelo container de DI com ciclo de vida Scoped.</li>
+                        <li><strong>TypeFilter:</strong> Instancia o filtro sob demanda resolvendo dependências automaticamente.</li>
+                        <li><strong>EndpointFilter:</strong> Delegates assíncronos encadeados nas rotas de Minimal APIs com zero alocação de metadados.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Painel de Resultados HTTP -->
+        <div class="result-area">
+            <div class="result-header">
+                <div>
+                    <strong>Chamada:</strong> <span id="lblRota">-</span>
+                </div>
+                <div>
+                    <span id="lblBadge" class="status-badge" style="display: none;">-</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 0.5rem; font-size: 0.82rem; color: #a0a0b0;">
+                <div><strong>Cabeçalhos HTTP Injetados pelo Filtro:</strong></div>
+                <div id="lblHeaders" style="margin-top: 0.2rem; font-family: monospace; color: #68d391;">-</div>
+            </div>
+
+            <div>
+                <strong style="font-size: 0.82rem; color: #a0a0b0;">Corpo da Resposta (Payload JSON):</strong>
+                <pre><code id="lblBody">// Clique em uma das operações acima para testar a interceptação de filtros.</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function executarChamada(url, enviarApiKey) {
+            const lblRota = document.getElementById('lblRota');
+            const lblBadge = document.getElementById('lblBadge');
+            const lblHeaders = document.getElementById('lblHeaders');
+            const lblBody = document.getElementById('lblBody');
+
+            lblRota.textContent = 'GET ' + url + (enviarApiKey ? ' [com X-API-Key]' : ' [sem X-API-Key]');
+            lblBadge.style.display = 'none';
+            lblHeaders.textContent = 'Aguardando resposta...';
+            lblBody.textContent = 'Processando...';
+
+            const headers = { 'Accept': 'application/json' };
+            if (enviarApiKey) {
+                headers['X-API-Key'] = 'CHAVE-SECRETA-LAB-16';
+            }
+
+            try {
+                const res = await fetch(url, { headers: headers });
+                lblBadge.style.display = 'inline-block';
+                lblBadge.textContent = res.status + ' ' + res.statusText;
+                lblBadge.className = 'status-badge ' + (res.ok ? 'status-200' : 'status-401');
+
+                // Extrair headers customizados de filtro
+                const headersFiltro = [];
+                const tempo = res.headers.get('x-tempo-execucao-ms');
+                const auditoria = res.headers.get('x-filtro-auditoria');
+
+                if (tempo) headersFiltro.push('X-Tempo-Execucao-Ms: ' + tempo + 'ms');
+                if (auditoria) headersFiltro.push('X-Filtro-Auditoria: ' + auditoria);
+
+                lblHeaders.textContent = headersFiltro.length > 0
+                    ? headersFiltro.join(' | ')
+                    : 'Nenhum cabeçalho customizado injetado (possível curto-circuito na autorização).';
+
+                const json = await res.json();
+                lblBody.textContent = JSON.stringify(json, null, 2);
+            } catch (err) {
+                lblBadge.style.display = 'inline-block';
+                lblBadge.textContent = 'Erro';
+                lblBadge.className = 'status-badge status-401';
+                lblHeaders.textContent = '-';
+                lblBody.textContent = err.toString();
+            }
+        }
+    </script>
+</body>
+</html>
