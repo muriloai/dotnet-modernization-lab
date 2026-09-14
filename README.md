@@ -105,6 +105,12 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | [30](concepts/30-publish-deployment/README.md) | Publicação e Deploy                  | WebDeploy, msdeploy, pastas do IIS, GAC, containers Windows de 8 GB e transformações XDT | dotnet publish, Self-Contained, Single-File, R2R, containers Linux mínimos (Chiseled) e cross-platform |
 | [31](concepts/31-environment-config/README.md) | Ambientes e Feature Flags            | Chaves em appSettings, #if DEBUG, reciclagem de AppPool ao editar Web.config | IWebHostEnvironment, appsettings hierárquico, Microsoft.FeatureManagement e reload a quente |
 
+### Recursos do .NET Moderno
+
+| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        |
+| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [32](concepts/32-minimal-apis/README.md)     | Minimal APIs                         | Controllers pesados do Web API 2, herança obrigatória de ApiController e alto overhead | app.MapGet/MapPost, Route Groups, Endpoint Filters, TypedResults e zero boilerplate |
+
 ---
 
 ## Pré-requisitos para Execução

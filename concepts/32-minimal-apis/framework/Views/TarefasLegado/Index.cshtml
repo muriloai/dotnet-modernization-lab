@@ -1,0 +1,110 @@
+﻿@{
+    ViewBag.Title = "Tarefas Legado (Controllers)";
+}
+
+<header>
+    <h1>Endpoints com Controllers Tradicionais</h1>
+    <p class="subtitle">Demonstracao com classes pesadas de Controller no .NET Framework 4.8.1</p>
+</header>
+
+<div class="card">
+    <h2>Criar Tarefa (Requer Controller e Action)</h2>
+    <form id="form-tarefa" onsubmit="criarTarefa(event)">
+        <div class="form-row">
+            <div class="form-group" style="flex: 2;">
+                <label for="titulo">Titulo da Tarefa</label>
+                <input type="text" id="titulo" placeholder="Ex: Substituir Controllers por Minimal APIs" required />
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label for="prioridade">Prioridade</label>
+                <select id="prioridade">
+                    <option value="Alta">Alta</option>
+                    <option value="Media" selected>Media</option>
+                    <option value="Baixa">Baixa</option>
+                </select>
+            </div>
+            <button type="submit" class="btn">Adicionar</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Tarefas Cadastradas</h2>
+    <div id="lista-tarefas" class="task-list">
+        <div style="text-align: center; color: var(--text-secondary); padding: 1rem;">Carregando tarefas...</div>
+    </div>
+</div>
+
+<script>
+    function carregarTarefas() {
+        fetch('@Url.Action("ObterTodas", "TarefasLegado")')
+            .then(function(res) { return res.json(); })
+            .then(function(tarefas) {
+                var container = document.getElementById('lista-tarefas');
+                if (tarefas.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 1rem;">Nenhuma tarefa encontrada.</div>';
+                    return;
+                }
+
+                container.innerHTML = tarefas.map(function(t) {
+                    var badgeClass = 'badge-' + t.Prioridade.toLowerCase();
+                    return '<div class="task-card">' +
+                        '<div class="task-left">' +
+                            '<input type="checkbox" ' + (t.Concluida ? 'checked' : '') + ' onchange="alternar(' + t.Id + ')">' +
+                            '<span class="task-title ' + (t.Concluida ? 'task-done' : '') + '">' + t.Titulo + '</span>' +
+                        '</div>' +
+                        '<div style="display: flex; align-items: center; gap: 0.75rem;">' +
+                            '<span class="badge ' + badgeClass + '">' + t.Prioridade + '</span>' +
+                            '<button class="btn btn-danger" onclick="excluir(' + t.Id + ')">Excluir</button>' +
+                        '</div>' +
+                    '</div>';
+                }).join('');
+            });
+    }
+
+    function criarTarefa(e) {
+        e.preventDefault();
+        var formData = new URLSearchParams();
+        formData.append('titulo', document.getElementById('titulo').value.trim());
+        formData.append('prioridade', document.getElementById('prioridade').value);
+
+        fetch('@Url.Action("Criar", "TarefasLegado")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        }).then(function(res) {
+            if (res.ok) {
+                document.getElementById('titulo').value = '';
+                carregarTarefas();
+            }
+        });
+    }
+
+    function alternar(id) {
+        var formData = new URLSearchParams();
+        formData.append('id', id);
+
+        fetch('@Url.Action("Alternar", "TarefasLegado")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        }).then(function(res) {
+            if (res.ok) carregarTarefas();
+        });
+    }
+
+    function excluir(id) {
+        var formData = new URLSearchParams();
+        formData.append('id', id);
+
+        fetch('@Url.Action("Excluir", "TarefasLegado")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
+        }).then(function(res) {
+            if (res.ok) carregarTarefas();
+        });
+    }
+
+    carregarTarefas();
+</script>
