@@ -1,0 +1,171 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conceito 33 - Native AOT e Trimming (.NET 10)</title>
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Native AOT e Trimming</h1>
+      <p class="subtitle">Compilação direta para código de máquina nativo, zero aquecimento JIT e pegada de memória mínima no .NET 10</p>
+    </header>
+
+    <!-- Metricas do Processo -->
+    <div class="card">
+      <h2>Telemetria de Runtime da Aplicacao</h2>
+      <div class="grid-metrics">
+        <div class="metric-box">
+          <div class="metric-val" id="met-modo">Carregando...</div>
+          <div class="metric-label">Modo de Compilacao</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val" id="met-memoria">0 MB</div>
+          <div class="metric-label">Memoria de Trabalho (RAM)</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val" id="met-jit">-</div>
+          <div class="metric-label">Compilador JIT Presente</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val" id="met-plataforma">-</div>
+          <div class="metric-label">Plataforma / SO</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val" id="met-serializador">-</div>
+          <div class="metric-label">Serializacao JSON</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-val" id="met-uptime">0 s</div>
+          <div class="metric-label">Tempo de Atividade</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparadores Visuais -->
+    <div class="card">
+      <h2>Comparativo Visual: .NET Framework 4.8.1 (JIT) vs .NET 10 (Native AOT)</h2>
+      <div class="compare-container">
+        <!-- Cold Start -->
+        <div class="compare-row">
+          <div class="compare-label">
+            <span>Tempo de Cold Start (Primeira Requisicao)</span>
+            <span style="color: var(--accent-emerald);">AOT ~99% mais veloz</span>
+          </div>
+          <div class="compare-bar-bg">
+            <div class="bar-framework" style="width: 95%;">.NET Framework: ~2.500 ms</div>
+            <div class="bar-aot" style="width: 5%;">AOT: 12 ms</div>
+          </div>
+        </div>
+
+        <!-- Memoria -->
+        <div class="compare-row">
+          <div class="compare-label">
+            <span>Consumo Inicial de Memoria RAM</span>
+            <span style="color: var(--accent-emerald);">AOT ~88% menor</span>
+          </div>
+          <div class="compare-bar-bg">
+            <div class="bar-framework" style="width: 88%;">.NET Framework: 220 MB</div>
+            <div class="bar-aot" style="width: 12%;">AOT: 25 MB</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Benchmark Interativo -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2>Benchmark de Execucao (100.000 Operacoes)</h2>
+        <button class="btn" onclick="executarBenchmark()">Executar Teste de Velocidade</button>
+      </div>
+      <div id="benchmark-result" style="font-family: monospace; font-size: 0.9rem; background: #0f172a; padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border-color); color: var(--accent-cyan);">
+        Clique no botao para testar a taxa de processamento direto da CPU.
+      </div>
+    </div>
+
+    <!-- Tabela Comparativa -->
+    <div class="card">
+      <h2>Diferencas Tecnicas e Arquiteturais</h2>
+      <div style="overflow-x: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Metrica / Caracteristica</th>
+              <th>.NET Framework 4.8.1 (JIT)</th>
+              <th>.NET 10 (Native AOT)</th>
+              <th>Impacto Pratico</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-aot">
+            <tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">Carregando comparativo...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function carregarDiagnostico() {
+      try {
+        const res = await fetch('/api/aot/diagnostico');
+        if (res.ok) {
+          const d = await res.json();
+          document.getElementById('met-modo').innerText = d.modoExecucao;
+          document.getElementById('met-memoria').innerText = d.memoriaAlocadaMb + ' MB';
+          document.getElementById('met-jit').innerText = d.jitHabilitado ? 'Habilitado (Ambiente Dev)' : 'Removido (AOT Puro)';
+          document.getElementById('met-plataforma').innerText = d.plataforma;
+          document.getElementById('met-serializador').innerText = d.serializadorUtilizado;
+          document.getElementById('met-uptime').innerText = d.uptimeSegundos + ' s';
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function carregarComparativo() {
+      try {
+        const res = await fetch('/api/aot/comparativo');
+        if (res.ok) {
+          const lista = await res.json();
+          const tbody = document.getElementById('tabela-aot');
+          tbody.innerHTML = lista.map(c => `
+            <tr>
+              <td style="font-weight: 600; color: var(--accent-cyan);">${c.metrica}</td>
+              <td style="color: var(--accent-rose);">${c.netFramework481Jit}</td>
+              <td style="color: var(--accent-emerald); font-weight: 600;">${c.net10NativeAot}</td>
+              <td style="font-size: 0.8rem; color: var(--text-secondary);">${c.ganhoEficiencia}</td>
+            </tr>
+          `).join('');
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function executarBenchmark() {
+      const container = document.getElementById('benchmark-result');
+      container.innerText = 'Executando benchmark na CPU...';
+
+      try {
+        const res = await fetch('/api/aot/benchmark', { method: 'POST' });
+        if (res.ok) {
+          const b = await res.json();
+          container.innerHTML = `
+            <div>Operacoes Concluidas: <strong>${b.operacoesExecutadas.toLocaleString('pt-BR')}</strong></div>
+            <div>Tempo Total de Execucao: <strong style="color: var(--accent-emerald);">${b.tempoTotalMicrossegundos.toLocaleString('pt-BR')} s</strong></div>
+            <div>Tempo Medio por Operacao: <strong style="color: var(--accent-cyan);">${b.tempoMedioPorOperacaoNanossegundos.toLocaleString('pt-BR')} ns</strong></div>
+            <div>Memoria de Saida: <strong>${(b.memoriaFinalBytes / (1024 * 1024)).toFixed(2)} MB</strong></div>
+          `;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    carregarDiagnostico();
+    carregarComparativo();
+  </script>
+</body>
+</html>

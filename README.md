@@ -110,6 +110,7 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        |
 | --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | [32](concepts/32-minimal-apis/README.md)     | Minimal APIs                         | Controllers pesados do Web API 2, herança obrigatória de ApiController e alto overhead | app.MapGet/MapPost, Route Groups, Endpoint Filters, TypedResults e zero boilerplate |
+| [33](concepts/33-native-aot/README.md)       | Native AOT e Trimming                | RyuJIT em runtime, NGen local frágil, Reflection irrestrita e aquecimento inicial alto | Compilação nativa Ahead-of-Time (<PublishAot>), Trimming agressivo, inicialização em <15ms e memória mínima |
 
 ---
 

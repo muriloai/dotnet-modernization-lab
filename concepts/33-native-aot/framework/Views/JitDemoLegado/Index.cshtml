@@ -1,0 +1,54 @@
+﻿@model JitOverheadDemo.Models.JitDemoLegadoDto
+@{
+    ViewBag.Title = "Sobrecarga JIT Legado";
+}
+
+<header>
+    <h1>Sobrecarga JIT no .NET Framework 4.8.1</h1>
+    <p class="subtitle">Demonstracao com RyuJIT em tempo de execucao, Reflection pesada e alto consumo de memoria</p>
+</header>
+
+<div class="card">
+    <h2>Telemetria do Processo IIS / w3wp</h2>
+    <div class="grid-metrics">
+        <div class="info-item" style="background: #0f172a; padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Compilador</div>
+            <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-blue); margin-top: 0.25rem;">@Model.Compilador</div>
+        </div>
+        <div class="info-item" style="background: #0f172a; padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Memoria de Trabalho (RAM)</div>
+            <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-rose); margin-top: 0.25rem;">@Model.MemoriaWorkingSetMb MB</div>
+        </div>
+        <div class="info-item" style="background: #0f172a; padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Serializador</div>
+            <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-blue); margin-top: 0.25rem;">@Model.Serializador</div>
+        </div>
+        <div class="info-item" style="background: #0f172a; padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border-color);">
+            <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Versao CLR</div>
+            <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-blue); margin-top: 0.25rem;">@Model.VersaoClr</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Benchmark JIT (100.000 Operacoes)</h2>
+    <button class="btn" onclick="executarBenchmark()">Disparar Benchmark</button>
+    <div id="resultado-benchmark" style="background: #0f172a; padding: 1rem; border-radius: 0.5rem; margin-top: 1rem; border: 1px solid var(--border-color); font-family: monospace;">
+        Clique no botao para testar a taxa de processamento no .NET Framework 4.8.1.
+    </div>
+</div>
+
+<script>
+    function executarBenchmark() {
+        var container = document.getElementById('resultado-benchmark');
+        container.innerText = 'Executando benchmark no w3wp...';
+
+        fetch('@Url.Action("Benchmark", "JitDemoLegado")', { method: 'POST' })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                container.innerHTML = '<div>Operacoes: <strong>' + data.iteracoes + '</strong></div>' +
+                    '<div>Tempo Total: <strong style="color: var(--accent-blue);">' + data.tempoTotalMs + ' ms</strong></div>' +
+                    '<div>Memoria RAM: <strong>' + data.memoriaMb + ' MB</strong></div>';
+            });
+    }
+</script>
