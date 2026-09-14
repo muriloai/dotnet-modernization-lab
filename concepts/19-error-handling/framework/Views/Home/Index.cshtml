@@ -1,0 +1,95 @@
+@{
+    ViewBag.Title = "Conceito 19: Tratamento de Erros (Legado)";
+}
+
+<header>
+    <div class="header-title-row">
+        <div>
+            <h1>Conceito 19: Tratamento de Erros</h1>
+            <p class="subtitle">Laboratório comparativo: HandleErrorAttribute, customErrors e Application_Error no .NET Framework 4.8.1</p>
+        </div>
+        <span class="badge-dotnet">.NET Framework 4.8.1 (IIS Express - Porta 6901)</span>
+    </div>
+</header>
+
+@if (ViewBag.Mensagem != null)
+{
+    <div class="card" style="border-left: 4px solid var(--success); margin-bottom: 1.5rem;">
+        <p style="color: #86efac; font-weight: 600;">@ViewBag.Mensagem</p>
+    </div>
+}
+
+<div class="grid">
+    <div class="card">
+        <h2>Cenários de Teste no MVC Legado</h2>
+        <p class="subtitle" style="margin-bottom: 1rem;">
+            No modelo tradicional, exceções disparam filtros de página inteira ou redirecionamentos configurados no Web.config.
+        </p>
+
+        <div class="button-column" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <a href="@Url.Action("TestarSucesso", "Home")" class="btn-primary" style="text-decoration: none; text-align: center;">
+                1. Executar Ação com Sucesso (200 OK)
+            </a>
+
+            <a href="@Url.Action("TestarRegraNegocio", "Home")" class="btn-warning" style="text-decoration: none; text-align: center;">
+                2. Disparar RegraNegocioLegadaException (HandleError)
+            </a>
+
+            <a href="@Url.Action("TestarErroInesperado", "Home")" class="btn-danger" style="text-decoration: none; text-align: center;">
+                3. Disparar Falha Crítica de Infraestrutura (500)
+            </a>
+
+            <a href="@Url.Action("NotFound", "Home")" class="btn-secondary" style="text-decoration: none; text-align: center;">
+                4. Recurso Inexistente (404 customErrors)
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Como o Legado se Comporta</h2>
+        <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+            <p style="margin-bottom: 0.75rem;">
+                <strong>1. HandleErrorAttribute:</strong> Intercepta exceções nas Actions e renderiza a view <code>~/Views/Shared/Error.cshtml</code>, substituindo o contexto HTTP original por um modelo <code>HandleErrorInfo</code>.
+            </p>
+            <p style="margin-bottom: 0.75rem;">
+                <strong>2. customErrors no Web.config:</strong> Se uma falha ocorrer fora do pipeline do MVC (por exemplo, em um módulo HTTP ou erro de parsing), o ASP.NET intercepta o código de status e executa um redirecionamento 302 para a URL configurada.
+            </p>
+            <p style="margin-bottom: 0.75rem;">
+                <strong>3. Application_Error no Global.asax:</strong> O último recurso para capturar exceções não tratadas. Exige chamar <code>Server.GetLastError()</code> e <code>Server.ClearError()</code> manualmente.
+            </p>
+            <p>
+                <strong>4. Incompatibilidade com APIs:</strong> Caso um cliente consuma uma API esperando JSON e ocorra um erro, o servidor legado enviava HTML da página de erro com status 200 ou 302 em vez de um código de erro apropriado com payload estruturado.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Limitações do Modelo Legado</h2>
+    <table class="comparison-table">
+        <thead>
+            <tr>
+                <th>Característica</th>
+                <th>Comportamento no .NET Framework 4.8.1</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Fragmentação</strong></td>
+                <td>HandleErrorAttribute funcionava apenas no MVC tradicional. O Web API 2 exigia implementar IExceptionHandler e IExceptionFilter próprios em namespaces distintos.</td>
+            </tr>
+            <tr>
+                <td><strong>Formato de Resposta</strong></td>
+                <td>Redirecionava para páginas HTML estáticas ou gerava payloads proprietários sem qualquer padronização.</td>
+            </tr>
+            <tr>
+                <td><strong>Injeção de Dependências</strong></td>
+                <td>Filtros eram instanciados pelo runtime sem acesso direto ao contêiner de DI.</td>
+            </tr>
+            <tr>
+                <td><strong>Conflitos de Servidor</strong></td>
+                <td>Conflito frequente entre as tags customErrors do ASP.NET e httpErrors do IIS no Web.config.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>

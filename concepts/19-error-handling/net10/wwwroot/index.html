@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conceito 19: Tratamento de Erros (.NET 10)</title>
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-title-row">
+        <div>
+          <h1>Conceito 19: Tratamento de Erros e ProblemDetails</h1>
+          <p class="subtitle">Laboratório comparativo: IExceptionHandler, UseExceptionHandler e RFC 7807/9457 no .NET 10</p>
+        </div>
+        <span class="badge-dotnet">.NET 10 (Kestrel - Porta 6900)</span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Simulação de Cenários de Execução</h2>
+        <p class="subtitle" style="margin-bottom: 1rem;">
+          Dispare chamadas para as Actions do ProdutosController. O controlador não possui blocos try-catch; todas as falhas são interceptadas pela cadeia IExceptionHandler.
+        </p>
+
+        <div class="button-grid">
+          <button type="button" id="btnSucesso" class="btn-primary">
+            1. Sucesso (200 OK)
+            <div style="font-size: 0.75rem; font-weight: normal; opacity: 0.85;">GET /api/produtos/1</div>
+          </button>
+
+          <button type="button" id="btnNaoEncontrado" class="btn-warning">
+            2. Não Encontrado (404)
+            <div style="font-size: 0.75rem; font-weight: normal; opacity: 0.85;">GET /api/produtos/999</div>
+          </button>
+
+          <button type="button" id="btnQtdInvalida" class="btn-warning">
+            3. Quantidade Inválida (422)
+            <div style="font-size: 0.75rem; font-weight: normal; opacity: 0.85;">RegraNegocioException</div>
+          </button>
+
+          <button type="button" id="btnLimiteExcedido" class="btn-warning">
+            4. Limite Não-VIP (422)
+            <div style="font-size: 0.75rem; font-weight: normal; opacity: 0.85;">RegraNegocioException</div>
+          </button>
+
+          <button type="button" id="btnFalhaIntegracao" class="btn-danger">
+            5. Falha Externa (502)
+            <div style="font-size: 0.75rem; font-weight: normal; opacity: 0.85;">IntegracaoExternaException</div>
+          </button>
+
+          <button type="button" id="btnErroInesperado" class="btn-danger">
+            6. Falha Inesperada (500)
+            <div style="font-size: 0.75rem; font-weight: normal; opacity: 0.85;">NullReferenceException</div>
+          </button>
+        </div>
+
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+          <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">Cadeia de Manipuladores Ativa</h3>
+          <ol style="font-size: 0.85rem; color: var(--text-secondary); padding-left: 1.2rem; line-height: 1.6;">
+            <li><code>EntidadeNaoEncontradaExceptionHandler</code>: Trata 404 com metadados do recurso.</li>
+            <li><code>RegraNegocioExceptionHandler</code>: Trata 422 com código da regra de domínio.</li>
+            <li><code>GlobalExceptionHandler</code>: Fallback para 502/500 com mascaramento de dados sensíveis.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Resposta HTTP Inspecionada</h2>
+        <div class="response-box">
+          <div class="response-status-bar">
+            <span id="labelEndpoint" style="color: var(--text-secondary);">Nenhuma requisição disparada</span>
+            <span id="statusBadge" class="status-pill status-2xx" style="display: none;">Status</span>
+          </div>
+          <div style="margin-bottom: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);" id="headerContentType"></div>
+          <pre><code id="corpoResposta">// Clique em um dos botões ao lado para inspecionar o payload retornado pelo pipeline unificado.</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Comparativo Arquitetural: Legado vs Moderno</h2>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Característica</th>
+            <th>.NET Framework 4.8.1 (Legado)</th>
+            <th>.NET 10 (Moderno)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Ponto Central de Interceptação</strong></td>
+            <td>Fragmentado entre Application_Error no Global.asax, HandleErrorAttribute no MVC e IExceptionHandler no Web API.</td>
+            <td>Unificado no pipeline através do middleware app.UseExceptionHandler().</td>
+          </tr>
+          <tr>
+            <td><strong>Injeção de Dependências</strong></td>
+            <td>Inexistente em eventos de ciclo de vida e complexa em atributos clássicos.</td>
+            <td>Nativa em cada IExceptionHandler com injeção direta de IProblemDetailsService e ILogger&lt;T&gt;.</td>
+          </tr>
+          <tr>
+            <td><strong>Padrão de Resposta de Erro</strong></td>
+            <td>Formatos proprietários variados ou páginas HTML estáticas renderizadas pelo IIS.</td>
+            <td>Padronizado conforme as especificações RFC 7807 e RFC 9457 (ProblemDetails).</td>
+          </tr>
+          <tr>
+            <td><strong>Encadeamento de Handlers</strong></td>
+            <td>Complexo e com risco de sobreposição entre filtros e módulos HTTP.</td>
+            <td>Cadeia de responsabilidade limpa onde cada handler decide se consome a falha ou a repassa.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const labelEndpoint = document.getElementById('labelEndpoint');
+    const statusBadge = document.getElementById('statusBadge');
+    const headerContentType = document.getElementById('headerContentType');
+    const corpoResposta = document.getElementById('corpoResposta');
+
+    async function executarRequisicao(metodo, url, payload = null) {
+      labelEndpoint.textContent = `${metodo} ${url}`;
+      corpoResposta.textContent = 'Enviando requisição...';
+      statusBadge.style.display = 'none';
+
+      try {
+        const opcoes = {
+          method: metodo,
+          headers: { 'Accept': 'application/json, application/problem+json' }
+        };
+
+        if (payload) {
+          opcoes.headers['Content-Type'] = 'application/json';
+          opcoes.body = JSON.stringify(payload);
+        }
+
+        const resposta = await fetch(url, opcoes);
+        const status = resposta.status;
+        const contentType = resposta.headers.get('content-type') || '';
+
+        statusBadge.textContent = `${status} ${resposta.statusText}`;
+        statusBadge.className = 'status-pill ' + (
+          status >= 200 && status < 300 ? 'status-2xx' :
+          status >= 400 && status < 500 ? 'status-4xx' : 'status-5xx'
+        );
+        statusBadge.style.display = 'inline-block';
+
+        headerContentType.textContent = `Content-Type: ${contentType}`;
+
+        const dados = await resposta.json();
+        corpoResposta.textContent = JSON.stringify(dados, null, 2);
+      } catch (err) {
+        corpoResposta.textContent = 'Erro ao processar chamada HTTP: ' + err.message;
+      }
+    }
+
+    document.getElementById('btnSucesso').addEventListener('click', () => {
+      executarRequisicao('GET', '/api/produtos/1');
+    });
+
+    document.getElementById('btnNaoEncontrado').addEventListener('click', () => {
+      executarRequisicao('GET', '/api/produtos/999');
+    });
+
+    document.getElementById('btnQtdInvalida').addEventListener('click', () => {
+      executarRequisicao('POST', '/api/produtos/comprar', {
+        produtoId: 1,
+        quantidade: 0,
+        clienteVip: false
+      });
+    });
+
+    document.getElementById('btnLimiteExcedido').addEventListener('click', () => {
+      executarRequisicao('POST', '/api/produtos/comprar', {
+        produtoId: 1,
+        quantidade: 15,
+        clienteVip: false
+      });
+    });
+
+    document.getElementById('btnFalhaIntegracao').addEventListener('click', () => {
+      executarRequisicao('POST', '/api/produtos/comprar', {
+        produtoId: 500,
+        quantidade: 2,
+        clienteVip: true
+      });
+    });
+
+    document.getElementById('btnErroInesperado').addEventListener('click', () => {
+      executarRequisicao('POST', '/api/produtos/comprar', {
+        produtoId: 666,
+        quantidade: 1,
+        clienteVip: false
+      });
+    });
+  </script>
+</body>
+</html>

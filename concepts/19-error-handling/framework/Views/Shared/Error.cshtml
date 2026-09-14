@@ -1,0 +1,41 @@
+@model System.Web.Mvc.HandleErrorInfo
+@{
+    ViewBag.Title = "Erro na Aplicação";
+}
+
+<header>
+    <div class="header-title-row">
+        <div>
+            <h1>Falha no Processamento da Requisição</h1>
+            <p class="subtitle">Página padrão de erro interceptada pelo HandleErrorAttribute do ASP.NET MVC 5</p>
+        </div>
+        <span class="badge-dotnet">.NET Framework 4.8.1 (IIS Express - Porta 6901)</span>
+    </div>
+</header>
+
+<div class="card" style="border-left: 4px solid var(--danger);">
+    <h2>Ocorreu um erro durante o processamento</h2>
+    <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+        No ASP.NET MVC clássico com <code>&lt;customErrors mode="On"&gt;</code>, qualquer exceção não tratada na Action redireciona o usuário para esta view HTML estática.
+    </p>
+
+    @if (Model != null)
+    {
+        <div style="background-color: var(--bg-primary); padding: 1rem; border-radius: 4px; font-family: var(--font-mono); font-size: 0.85rem;">
+            <div><strong>Controller:</strong> @Model.ControllerName</div>
+            <div><strong>Action:</strong> @Model.ActionName</div>
+            <div><strong>Tipo da Exceção:</strong> @Model.Exception.GetType().FullName</div>
+            <div style="margin-top: 0.5rem; color: #fca5a5;"><strong>Mensagem:</strong> @Model.Exception.Message</div>
+        </div>
+    }
+    else
+    {
+        <div style="background-color: var(--bg-primary); padding: 1rem; border-radius: 4px; font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-secondary);">
+            Informações detalhadas da exceção não foram disponibilizadas pelo contexto ou foram capturadas diretamente pelo evento Application_Error.
+        </div>
+    }
+
+    <div style="margin-top: 1.5rem;">
+        <a href="@Url.Action("Index", "Home")" class="btn-primary" style="display: inline-block; text-decoration: none;">Voltar para o Início</a>
+    </div>
+</div>

@@ -31,46 +31,47 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 
 ### Fundamentos da Plataforma
 
-| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        | Status       |
-| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------ |
-| [01](concepts/01-project-structure/README.md) | Estrutura de Projeto e Inicialização | MSBuild clássico XML, `Global.asax.cs`, IIS                   | SDK-style csproj, `Program.cs` com Top-Level, Kestrel                   | Concluído    |
-| [02](concepts/02-configuration/README.md)     | Configuração e Options Pattern       | `ConfigurationManager`, XML `Web.config`, seções customizadas | `IConfiguration`, JSON hierárquico, Options Pattern e `IOptionsMonitor` | Concluído    |
-| [03](concepts/03-dependency-injection/README.md) | Injeção de Dependências             | Sem DI nativo, containers externos e Service Locator          | Container de injeção nativo, ciclos de vida e Keyed Services            | Concluído    |
-| [04](concepts/04-middleware-vs-modules/README.md) | Middlewares vs Módulos HTTP         | IHttpModule, IHttpHandler e eventos do IIS                    | Pipeline linear de middlewares com RequestDelegate                      | Concluído    |
-| [05](concepts/05-routing/README.md)           | Roteamento                           | Tabelas separadas (MVC vs Web API) e conflitos de convenção   | Endpoint Routing unificado, MapGroup e restrições tipadas                | Concluído    |
-| [06](concepts/06-controllers-actions/README.md) | Controllers e Actions               | Divisão entre Controller (MVC) e ApiController (Web API)      | ControllerBase unificado, [ApiController] e TypedResults                 | Concluído    |
-| [07](concepts/07-views-razor-templating/README.md) | Views, Razor e Templating           | Razor 3, HTML Helpers (@Html.*), Child Actions e MVC puro    | Tag Helpers (<input asp-*>), View Components, Razor Pages | Concluído    |
+| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        |
+| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [01](concepts/01-project-structure/README.md) | Estrutura de Projeto e Inicialização | MSBuild clássico XML, `Global.asax.cs`, IIS                   | SDK-style csproj, `Program.cs` com Top-Level, Kestrel                   |
+| [02](concepts/02-configuration/README.md)     | Configuração e Options Pattern       | `ConfigurationManager`, XML `Web.config`, seções customizadas | `IConfiguration`, JSON hierárquico, Options Pattern e `IOptionsMonitor` |
+| [03](concepts/03-dependency-injection/README.md) | Injeção de Dependências             | Sem DI nativo, containers externos e Service Locator          | Container de injeção nativo, ciclos de vida e Keyed Services            |
+| [04](concepts/04-middleware-vs-modules/README.md) | Middlewares vs Módulos HTTP         | IHttpModule, IHttpHandler e eventos do IIS                    | Pipeline linear de middlewares com RequestDelegate                      |
+| [05](concepts/05-routing/README.md)           | Roteamento                           | Tabelas separadas (MVC vs Web API) e conflitos de convenção   | Endpoint Routing unificado, MapGroup e restrições tipadas                |
+| [06](concepts/06-controllers-actions/README.md) | Controllers e Actions               | Divisão entre Controller (MVC) e ApiController (Web API)      | ControllerBase unificado, [ApiController] e TypedResults                 |
+| [07](concepts/07-views-razor-templating/README.md) | Views, Razor e Templating           | Razor 3, HTML Helpers (@Html.*), Child Actions e MVC puro    | Tag Helpers (<input asp-*>), View Components, Razor Pages                |
 
 ### Dados e Persistência
 
-| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        | Status       |
-| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------ |
-| [08](concepts/08-entity-framework/README.md)  | Entity Framework: EF 6 vs EF Core 10 | DbContext clássico, Web.config, inicializadores e roundtrips individuais | EF Core 10, AddDbContext, AsSplitQuery, ExecuteUpdate/Delete e batching nativo | Concluído    |
-| [09](concepts/09-repository-pattern/README.md) | Padrão Repositório e Unit of Work    | Repositórios genéricos (IRepository<T>), vazamento de IQueryable e UoW manual | Uso direto do DbContext com DI, repositórios de domínio (DDD) e transações assíncronas | Concluído    |
-| [10](concepts/10-data-validation/README.md)    | Validação de Dados e ProblemDetails  | DataAnnotations, checagem manual de ModelState.IsValid e erro proprietário | [ApiController] com validação automática, RFC 7807 ProblemDetails e IValidatableObject | Concluído    |
+| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        |
+| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [08](concepts/08-entity-framework/README.md)  | Entity Framework: EF 6 vs EF Core 10 | DbContext clássico, Web.config, inicializadores e roundtrips individuais | EF Core 10, AddDbContext, AsSplitQuery, ExecuteUpdate/Delete e batching nativo |
+| [09](concepts/09-repository-pattern/README.md) | Padrão Repositório e Unit of Work    | Repositórios genéricos (IRepository<T>), vazamento de IQueryable e UoW manual | Uso direto do DbContext com DI, repositórios de domínio (DDD) e transações assíncronas |
+| [10](concepts/10-data-validation/README.md)    | Validação de Dados e ProblemDetails  | DataAnnotations, checagem manual de ModelState.IsValid e erro proprietário | [ApiController] com validação automática, RFC 7807 ProblemDetails e IValidatableObject |
 
 ### Segurança
 
-| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        | Status       |
-| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------ |
-| [11](concepts/11-authentication/README.md)    | Autenticação                         | FormsAuthentication, MachineKey, cookies proprietários e IPrincipal | AddAuthentication, Cookie e JWT Bearer, ClaimsPrincipal e SignInAsync | Concluído    |
-| [12](concepts/12-authorization-policies/README.md) | Autorização e Políticas              | [Authorize(Roles = "Admin")], papéis estáticos e checagens manuais no código | AddAuthorization, Policy-based Authorization, IAuthorizationRequirement e handlers | Concluído    |
-| [13](concepts/13-security-best-practices/README.md) | Práticas de Segurança                | AntiForgery manual, cabeçalhos em Web.config e risco do BinaryFormatter | UseAntiforgery, AddCors tipado, Security Headers em middleware e System.Text.Json | Concluído    |
+| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        |
+| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [11](concepts/11-authentication/README.md)    | Autenticação                         | FormsAuthentication, MachineKey, cookies proprietários e IPrincipal | AddAuthentication, Cookie e JWT Bearer, ClaimsPrincipal e SignInAsync     |
+| [12](concepts/12-authorization-policies/README.md) | Autorização e Políticas              | [Authorize(Roles = "Admin")], papéis estáticos e checagens manuais no código | AddAuthorization, Policy-based Authorization, IAuthorizationRequirement e handlers |
+| [13](concepts/13-security-best-practices/README.md) | Práticas de Segurança                | AntiForgery manual, cabeçalhos em Web.config e risco do BinaryFormatter | UseAntiforgery, AddCors tipado, Security Headers em middleware e System.Text.Json |
 
 ### HTTP, APIs e Comunicação
 
-| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        | Status       |
-| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------ |
-| [14](concepts/14-rest-apis/README.md)         | Construção de APIs REST              | ApiController (Web API 2), IHttpActionResult e rotas manuais  | [ApiController], ControllerBase, IResult/TypedResults, OpenAPI nativo e Minimal APIs | Concluído    |
-| [15](concepts/15-httpclient/README.md)        | HttpClient e Requisições Externas    | WebClient, HttpWebRequest, new HttpClient() e socket exhaustion | IHttpClientFactory, Typed Clients, SocketsHttpHandler e resiliência | Concluído    |
-| [16](concepts/16-action-filters/README.md)    | Action Filters                       | ActionFilterAttribute em MVC e Web API separados, sem DI e Service Locator | IAsyncActionFilter, ServiceFilter, TypeFilter, DI nativa e Endpoint Filters | Concluído    |
-| [17](concepts/17-signalr/README.md)           | Comunicação em Tempo Real com SignalR | ASP.NET SignalR 2.x, OWIN, dependência de jQuery e proxies mágicos | ASP.NET Core SignalR, Hub fortemente tipado, MessagePack e sem jQuery | Concluído    |
+| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        |
+| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [14](concepts/14-rest-apis/README.md)         | Construção de APIs REST              | ApiController (Web API 2), IHttpActionResult e rotas manuais  | [ApiController], ControllerBase, IResult/TypedResults, OpenAPI nativo e Minimal APIs |
+| [15](concepts/15-httpclient/README.md)        | HttpClient e Requisições Externas    | WebClient, HttpWebRequest, new HttpClient() e socket exhaustion | IHttpClientFactory, Typed Clients, SocketsHttpHandler e resiliência     |
+| [16](concepts/16-action-filters/README.md)    | Action Filters                       | ActionFilterAttribute em MVC e Web API separados, sem DI e Service Locator | IAsyncActionFilter, ServiceFilter, TypeFilter, DI nativa e Endpoint Filters |
+| [17](concepts/17-signalr/README.md)           | Comunicação em Tempo Real com SignalR | ASP.NET SignalR 2.x, OWIN, dependência de jQuery e proxies mágicos | ASP.NET Core SignalR, Hub fortemente tipado, MessagePack e sem jQuery   |
 
 ### Logging e Observabilidade
 
-| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        | Status       |
-| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------ |
-| [18](concepts/18-logging/README.md)           | Logging                              | System.Diagnostics.Trace, listeners em Web.config e strings  | Microsoft.Extensions.Logging, ILogger<T>, structured logging e scopes  | Concluído    |
+| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        |
+| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [18](concepts/18-logging/README.md)           | Logging                              | System.Diagnostics.Trace, listeners em Web.config e strings  | Microsoft.Extensions.Logging, ILogger<T>, structured logging e scopes    |
+| [19](concepts/19-error-handling/README.md)    | Tratamento de Erros                  | Application_Error, HandleErrorAttribute e customErrors no Web.config | IExceptionHandler, UseExceptionHandler e RFC 7807/9457 ProblemDetails   |
 
 ---
 
