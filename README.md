@@ -66,6 +66,12 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | [16](concepts/16-action-filters/README.md)    | Action Filters                       | ActionFilterAttribute em MVC e Web API separados, sem DI e Service Locator | IAsyncActionFilter, ServiceFilter, TypeFilter, DI nativa e Endpoint Filters | Concluído    |
 | [17](concepts/17-signalr/README.md)           | Comunicação em Tempo Real com SignalR | ASP.NET SignalR 2.x, OWIN, dependência de jQuery e proxies mágicos | ASP.NET Core SignalR, Hub fortemente tipado, MessagePack e sem jQuery | Concluído    |
 
+### Logging e Observabilidade
+
+| Conceito                                      | Nome                                 | Tecnologias no Legado (4.8.1)                                 | Tecnologias no Moderno (.NET 10)                                        | Status       |
+| --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------ |
+| [18](concepts/18-logging/README.md)           | Logging                              | System.Diagnostics.Trace, listeners em Web.config e strings  | Microsoft.Extensions.Logging, ILogger<T>, structured logging e scopes  | Concluído    |
+
 ---
 
 ## Pré-requisitos para Execução

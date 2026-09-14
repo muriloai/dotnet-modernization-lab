@@ -1,0 +1,128 @@
+@model LoggingDemo.Models.PedidoLegado
+@{
+    ViewBag.Title = "Conceito 18: Logging (Legado)";
+    var logs = ViewBag.HistoricoLogs as System.Collections.Generic.IReadOnlyList<LoggingDemo.Models.LogLegadoItem>;
+}
+
+<header>
+    <div class="header-title-row">
+        <div>
+            <h1>Conceito 18: Logging e Observabilidade</h1>
+            <p class="subtitle">Laboratório comparativo: Rastreamento estático com System.Diagnostics.Trace no .NET Framework 4.8.1</p>
+        </div>
+        <span class="badge-dotnet">.NET Framework 4.8.1 (IIS Express - Porta 6801)</span>
+    </div>
+</header>
+
+<div class="grid">
+    <div class="card">
+        <h2>Processamento de Pedidos (Legado)</h2>
+        @using (Html.BeginForm("Processar", "Home", FormMethod.Post, new { id = "formLegado" }))
+        {
+            @Html.AntiForgeryToken()
+            <div class="form-group">
+                <label for="PedidoId">Identificador do Pedido</label>
+                @Html.TextBoxFor(m => m.PedidoId, new { @class = "form-control" })
+            </div>
+            <div class="form-group">
+                <label for="ClienteId">Código do Cliente</label>
+                @Html.TextBoxFor(m => m.ClienteId, new { @class = "form-control" })
+            </div>
+            <div class="form-group">
+                <label for="ClienteNome">Razão Social</label>
+                @Html.TextBoxFor(m => m.ClienteNome, new { @class = "form-control" })
+            </div>
+            <div class="form-group">
+                <label for="ValorTotal">Valor Total (R$)</label>
+                @Html.TextBoxFor(m => m.ValorTotal, new { @class = "form-control" })
+            </div>
+            <div class="form-group">
+                <label for="QuantidadeItens">Quantidade de Itens</label>
+                @Html.TextBoxFor(m => m.QuantidadeItens, new { @class = "form-control" })
+            </div>
+            <div class="form-group">
+                <label for="Canal">Canal de Venda</label>
+                @Html.TextBoxFor(m => m.Canal, new { @class = "form-control" })
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="simularAlerta" name="simularAlerta" value="true" />
+                <label for="simularAlerta">Simular aviso de estoque (Trace.TraceWarning)</label>
+            </div>
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="simularErro" name="simularErro" value="true" />
+                <label for="simularErro">Simular falha com exceção (Trace.TraceError)</label>
+            </div>
+
+            <div class="button-row">
+                <button type="submit" class="btn-primary">Executar via Trace</button>
+            </div>
+        }
+    </div>
+
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <h2 style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">Traces Capturados na Memória</h2>
+            @using (Html.BeginForm("Limpar", "Home", FormMethod.Post, new { style = "display: inline;" }))
+            {
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn-danger" style="padding: 0.35rem 0.7rem; font-size: 0.8rem;">Limpar</button>
+            }
+        </div>
+        <p class="subtitle" style="margin-top: 0; margin-bottom: 0.5rem; font-size: 0.85rem;">
+            Eventos capturados pelo MemoriaTraceListener registrado em XML no Web.config.
+        </p>
+
+        <div class="log-feed">
+            @if (logs == null || logs.Count == 0)
+            {
+                <div class="empty-state">Nenhum evento registrado no TraceListener. Dispare uma ação no formulário ao lado.</div>
+            }
+            else
+            {
+                foreach (var item in logs)
+                {
+                    var nivelClass = "level-" + item.Tipo;
+                    <div class="log-item @nivelClass">
+                        <div class="log-header">
+                            <span><strong>@item.DataHora.ToString("HH:mm:ss")</strong></span>
+                            <span class="log-level @item.Tipo">@item.Tipo</span>
+                        </div>
+                        <div class="log-message">@item.Mensagem</div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Limitações do Rastreamento no .NET Framework</h2>
+    <table class="comparison-table">
+        <thead>
+            <tr>
+                <th>Característica</th>
+                <th>Comportamento no Legado</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Formatação de Mensagens</strong></td>
+                <td>Uso de concatenação de strings ou string.Format, convertendo dados imediatamente em texto plano e gerando alocações na memória do servidor.</td>
+            </tr>
+            <tr>
+                <td><strong>Consultabilidade dos Dados</strong></td>
+                <td>Para pesquisar por pedidos de um cliente específico ou com valores elevados, é necessário realizar buscas textuais ou expressões regulares complexas.</td>
+            </tr>
+            <tr>
+                <td><strong>Injeção de Dependências</strong></td>
+                <td>Inexistente no pipeline nativo. O código recorria a chamadas estáticas como Trace.WriteLine ou instâncias estáticas de loggers de terceiros.</td>
+            </tr>
+            <tr>
+                <td><strong>Configuração</strong></td>
+                <td>Descrita obrigatoriamente em XML no Web.config através do bloco system.diagnostics.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>

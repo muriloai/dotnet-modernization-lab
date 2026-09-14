@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conceito 18: Logging e Observabilidade (.NET 10)</title>
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-title-row">
+        <div>
+          <h1>Conceito 18: Logging e Observabilidade</h1>
+          <p class="subtitle">Laboratório comparativo: Logging estruturado, escopos e geradores de código no .NET 10</p>
+        </div>
+        <span class="badge-dotnet">.NET 10 (Kestrel - Porta 6800)</span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Disparar Operações de Negócio</h2>
+        <form id="formPedido">
+          <div class="form-group">
+            <label for="pedidoId">Identificador do Pedido</label>
+            <input type="number" id="pedidoId" value="101" required>
+          </div>
+          <div class="form-group">
+            <label for="clienteId">Código do Cliente</label>
+            <input type="text" id="clienteId" value="CLI-8890" required>
+          </div>
+          <div class="form-group">
+            <label for="clienteNome">Razão Social</label>
+            <input type="text" id="clienteNome" value="Empresa Alpha Ltda" required>
+          </div>
+          <div class="form-group">
+            <label for="valorTotal">Valor Total (R$)</label>
+            <input type="number" id="valorTotal" step="0.01" value="1450.75" required>
+          </div>
+          <div class="form-group">
+            <label for="quantidadeItens">Quantidade de Itens</label>
+            <input type="number" id="quantidadeItens" value="4" required>
+          </div>
+          <div class="form-group">
+            <label for="canal">Canal de Venda</label>
+            <input type="text" id="canal" value="E-Commerce B2B" required>
+          </div>
+
+          <div class="checkbox-group">
+            <input type="checkbox" id="simularAlertaEstoque">
+            <label for="simularAlertaEstoque">Simular alerta de estoque reduzido (LogLevel.Warning)</label>
+          </div>
+
+          <div class="checkbox-group">
+            <input type="checkbox" id="simularErro">
+            <label for="simularErro">Simular erro crítico no gateway financeiro (LogLevel.Error com Exception)</label>
+          </div>
+
+          <div class="checkbox-group">
+            <input type="checkbox" id="usarLoggerOtimizado">
+            <label for="usarLoggerOtimizado">Utilizar Source Generator [LoggerMessage] (alta performance, zero alocação)</label>
+          </div>
+
+          <div class="button-row">
+            <button type="submit" class="btn-primary">Executar Processamento</button>
+            <button type="button" id="btnSucessoPadrao" class="btn-secondary">Sucesso Padrão</button>
+            <button type="button" id="btnAlertaEstoque" class="btn-secondary">Alerta de Estoque</button>
+            <button type="button" id="btnErro" class="btn-secondary">Erro Crítico</button>
+            <button type="button" id="btnOtimizado" class="btn-secondary">LoggerMessage Otimizado</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h2 style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">Logs Estruturados Capturados</h2>
+          <div>
+            <button type="button" id="btnAtualizarLogs" class="btn-secondary" style="padding: 0.35rem 0.7rem; font-size: 0.8rem;">Atualizar</button>
+            <button type="button" id="btnLimparLogs" class="btn-danger" style="padding: 0.35rem 0.7rem; font-size: 0.8rem;">Limpar</button>
+          </div>
+        </div>
+        <p class="subtitle" style="margin-top: 0; margin-bottom: 0.5rem; font-size: 0.85rem;">
+          Eventos capturados pelo provedor ILogger customizado com escopos contextuais e propriedades semânticas.
+        </p>
+
+        <div id="logFeed" class="log-feed">
+          <div class="empty-state">Nenhum evento registrado. Dispare uma ação no formulário ao lado.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Comparativo Arquitetural: Legado vs Moderno</h2>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Recurso</th>
+            <th>.NET Framework 4.8.1 (Legado)</th>
+            <th>.NET 10 (Moderno)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Abstração</strong></td>
+            <td>System.Diagnostics.Trace ou bibliotecas proprietárias (log4net/NLog) acopladas estaticamente.</td>
+            <td>Microsoft.Extensions.Logging nativa com injeção de dependências em ILogger&lt;T&gt;.</td>
+          </tr>
+          <tr>
+            <td><strong>Logging Estruturado</strong></td>
+            <td>Inexistente na plataforma nativa. Mensagens eram formatadas como texto plano, perdendo a tipagem dos dados.</td>
+            <td>Suporte nativo a templates semânticos ({PedidoId}), preservando atributos para consulta analítica.</td>
+          </tr>
+          <tr>
+            <td><strong>Escopos Contextuais</strong></td>
+            <td>Ausentes. Exigia propagação manual em CallContext, HttpContext.Current ou variáveis ThreadLocal.</td>
+            <td>Nativo com _logger.BeginScope, enriquecendo todos os logs da operação com IDs de correlação.</td>
+          </tr>
+          <tr>
+            <td><strong>Desempenho e Alocações</strong></td>
+            <td>Alocações frequentes no heap decorrentes de concatenação de strings e conversão de tipos de valor.</td>
+            <td>Otimizado para zero alocações via atributo [LoggerMessage] gerado em tempo de compilação.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const formPedido = document.getElementById('formPedido');
+    const logFeed = document.getElementById('logFeed');
+    const btnAtualizarLogs = document.getElementById('btnAtualizarLogs');
+    const btnLimparLogs = document.getElementById('btnLimparLogs');
+
+    async function carregarLogs() {
+      try {
+        const resp = await fetch('/api/logs-inspecao');
+        if (!resp.ok) return;
+        const logs = await resp.json();
+        renderizarLogs(logs);
+      } catch (err) {
+        console.error('Erro ao carregar logs:', err);
+      }
+    }
+
+    function renderizarLogs(logs) {
+      if (!logs || logs.length === 0) {
+        logFeed.innerHTML = '<div class="empty-state">Nenhum evento registrado. Dispare uma ação no formulário ao lado.</div>';
+        return;
+      }
+
+      logFeed.innerHTML = logs.map(item => {
+        const dataFormatada = new Date(item.dataHora).toLocaleTimeString('pt-BR');
+        const nivelClass = 'level-' + item.nivel;
+        
+        let propsHtml = '';
+        if (item.propriedadesEstruturadas && Object.keys(item.propriedadesEstruturadas).length > 0) {
+          propsHtml = '<div class="props-container">' + 
+            Object.entries(item.propriedadesEstruturadas).map(([k, v]) => {
+              const isScope = k.startsWith('Escopo:');
+              const classe = isScope ? 'scope-tag' : 'prop-tag';
+              return `<span class="${classe}"><span class="prop-key">${k}:</span> <span class="prop-val">${v}</span></span>`;
+            }).join('') + 
+          '</div>';
+        }
+
+        let escoposHtml = '';
+        if (item.escopos && item.escopos.length > 0) {
+          escoposHtml = '<div class="props-container">' +
+            item.escopos.map(s => `<span class="scope-tag">${s}</span>`).join('') +
+          '</div>';
+        }
+
+        return `
+          <div class="log-item ${nivelClass}">
+            <div class="log-header">
+              <span><strong>${dataFormatada}</strong> | EventId: ${item.eventId}</span>
+              <span class="log-level ${item.nivel}">${item.nivel}</span>
+            </div>
+            <div class="log-message">${escapeHtml(item.mensagem)}</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.3rem;">Categoria: ${escapeHtml(item.categoria)}</div>
+            ${propsHtml}
+            ${escoposHtml}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(texto) {
+      if (!texto) return '';
+      return texto
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    async function enviarPedido(dados) {
+      const correlationId = 'REQ-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+      try {
+        await fetch('/api/pedidos/processar', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Correlation-ID': correlationId
+          },
+          body: JSON.stringify(dados)
+        });
+        await carregarLogs();
+      } catch (err) {
+        console.error('Erro ao enviar pedido:', err);
+      }
+    }
+
+    formPedido.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const dados = {
+        pedidoId: parseInt(document.getElementById('pedidoId').value, 10),
+        clienteId: document.getElementById('clienteId').value,
+        clienteNome: document.getElementById('clienteNome').value,
+        valorTotal: parseFloat(document.getElementById('valorTotal').value),
+        quantidadeItens: parseInt(document.getElementById('quantidadeItens').value, 10),
+        canal: document.getElementById('canal').value,
+        simularAlertaEstoque: document.getElementById('simularAlertaEstoque').checked,
+        simularErro: document.getElementById('simularErro').checked,
+        usarLoggerOtimizado: document.getElementById('usarLoggerOtimizado').checked
+      };
+      enviarPedido(dados);
+    });
+
+    document.getElementById('btnSucessoPadrao').addEventListener('click', () => {
+      document.getElementById('simularAlertaEstoque').checked = false;
+      document.getElementById('simularErro').checked = false;
+      document.getElementById('usarLoggerOtimizado').checked = false;
+      formPedido.dispatchEvent(new Event('submit'));
+    });
+
+    document.getElementById('btnAlertaEstoque').addEventListener('click', () => {
+      document.getElementById('simularAlertaEstoque').checked = true;
+      document.getElementById('simularErro').checked = false;
+      document.getElementById('usarLoggerOtimizado').checked = false;
+      formPedido.dispatchEvent(new Event('submit'));
+    });
+
+    document.getElementById('btnErro').addEventListener('click', () => {
+      document.getElementById('simularAlertaEstoque').checked = false;
+      document.getElementById('simularErro').checked = true;
+      document.getElementById('usarLoggerOtimizado').checked = false;
+      formPedido.dispatchEvent(new Event('submit'));
+    });
+
+    document.getElementById('btnOtimizado').addEventListener('click', () => {
+      document.getElementById('simularAlertaEstoque').checked = false;
+      document.getElementById('simularErro').checked = false;
+      document.getElementById('usarLoggerOtimizado').checked = true;
+      formPedido.dispatchEvent(new Event('submit'));
+    });
+
+    btnAtualizarLogs.addEventListener('click', carregarLogs);
+
+    btnLimparLogs.addEventListener('click', async () => {
+      await fetch('/api/logs-inspecao', { method: 'DELETE' });
+      await carregarLogs();
+    });
+
+    // Carregar logs iniciais
+    carregarLogs();
+  </script>
+</body>
+</html>
