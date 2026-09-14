@@ -1,0 +1,37 @@
+﻿@{
+    ViewBag.Title = "API Design Legado";
+}
+
+<header>
+    <h1>Design de API Legado</h1>
+    <p class="subtitle">Demonstracao com Envelopes Manuais e ausência de RFC 7807 no .NET Framework 4.8.1</p>
+</header>
+
+<div class="grid">
+    <div class="card">
+        <h2>Chamadas a Endpoints Legados</h2>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
+            Observe que chamadas com erro retornam HTTP 200 OK contendo a propriedade "Sucesso: false".
+        </p>
+
+        <div class="btn-group">
+            <button class="btn" onclick="executar('@Url.Action("ObterProdutosV1", "ApiDesignLegado")')">GET Produtos (200 Envelope)</button>
+            <button class="btn btn-danger" onclick="executar('@Url.Action("ObterProdutoInexistenteV1", "ApiDesignLegado", new { id = 999 })')">GET Inexistente (HTTP 200 Erro)</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Resposta do Servidor</h2>
+        <pre id="resposta-json" class="code-container">// Clique em um botao para inspecionar o JSON retornado.</pre>
+    </div>
+</div>
+
+<script>
+    function executar(url) {
+        fetch(url)
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                document.getElementById('resposta-json').innerText = JSON.stringify(data, null, 2);
+            });
+    }
+</script>

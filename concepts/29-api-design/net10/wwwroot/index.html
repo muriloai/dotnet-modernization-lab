@@ -1,0 +1,162 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conceito 29 - Padrões de Design de API (.NET 10)</title>
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Padrões de Design de API</h1>
+      <p class="subtitle">Demonstracao com Asp.Versioning, RFC 7807 ProblemDetails, HATEOAS e Códigos HTTP Semânticos no .NET 10</p>
+    </header>
+
+    <div class="grid">
+      <!-- Painel de Controle -->
+      <div class="card">
+        <h2>Controles da Requisicao</h2>
+
+        <div class="control-group">
+          <label for="versao-api">Versao da API</label>
+          <select id="versao-api">
+            <option value="1.0">Versao 1.0 (Contrato Basico)</option>
+            <option value="2.0" selected>Versao 2.0 (HATEOAS, Categorias, Desconto)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="metodo-versionamento">Mecanismo de Versionamento</label>
+          <select id="metodo-versionamento">
+            <option value="url">Segmento de URL (Ex: /api/v2/produtos)</option>
+            <option value="query">Query String (Ex: /api/produtos?api-version=2.0)</option>
+            <option value="header">Cabecalho HTTP (Ex: X-Api-Version: 2.0)</option>
+          </select>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="executarGet()">GET Lista de Produtos</button>
+          <button class="btn btn-secondary" onclick="executarGetPorId(1)">GET Por ID (200 OK)</button>
+          <button class="btn btn-danger" onclick="executarGetPorId(999)">GET Inexistente (404 ProblemDetails)</button>
+        </div>
+
+        <div style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
+          <h2>Testar POST com ProblemDetails</h2>
+          <div class="control-group">
+            <label for="prod-nome">Nome</label>
+            <input type="text" id="prod-nome" value="Headset Bluetooth Noise-Cancelling">
+          </div>
+          <div class="control-group">
+            <label for="prod-preco">Preco (R$)</label>
+            <input type="number" id="prod-preco" step="0.01" value="799.00">
+          </div>
+          <div class="control-group">
+            <label for="prod-categoria">Categoria (Exclusivo V2)</label>
+            <input type="text" id="prod-categoria" value="Audio e Comunicacao">
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-primary" onclick="executarPost(false)">POST Valido (201 Created)</button>
+            <button class="btn btn-danger" onclick="executarPost(true)">POST Invalido (400 ProblemDetails)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resposta HTTP -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h2>Resposta HTTP e Metadados</h2>
+          <span id="status-tag" class="status-badge status-200">Aguardando chamada...</span>
+        </div>
+
+        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;" id="url-executada">
+          URL: -
+        </div>
+
+        <pre id="resposta-json" class="code-container">// O resultado da chamada HTTP aparecera aqui em tempo real.</pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function obterUrlEHeaders(endpointBase) {
+      const versao = document.getElementById('versao-api').value;
+      const mecanismo = document.getElementById('metodo-versionamento').value;
+      let url = '';
+      const headers = { 'Content-Type': 'application/json' };
+
+      if (mecanismo === 'url') {
+        url = `/api/v${versao}/${endpointBase}`;
+      } else if (mecanismo === 'query') {
+        url = `/api/${endpointBase}?api-version=${versao}`;
+      } else if (mecanismo === 'header') {
+        url = `/api/${endpointBase}`;
+        headers['X-Api-Version'] = versao;
+      }
+
+      return { url, headers };
+    }
+
+    function exibirResultado(res, url, data) {
+      const tag = document.getElementById('status-tag');
+      tag.className = 'status-badge';
+      if (res.status >= 200 && res.status < 300) {
+        tag.classList.add(res.status === 201 ? 'status-201' : 'status-200');
+      } else if (res.status === 404) {
+        tag.classList.add('status-404');
+      } else {
+        tag.classList.add('status-400');
+      }
+
+      tag.innerText = `HTTP ${res.status} ${res.statusText || ''}`;
+      document.getElementById('url-executada').innerText = `URL: ${url}`;
+      document.getElementById('resposta-json').innerText = JSON.stringify(data, null, 2);
+    }
+
+    async function executarGet() {
+      const { url, headers } = obterUrlEHeaders('produtos');
+      try {
+        const res = await fetch(url, { headers });
+        const data = await res.json();
+        exibirResultado(res, url, data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function executarGetPorId(id) {
+      const { url, headers } = obterUrlEHeaders(`produtos/${id}`);
+      try {
+        const res = await fetch(url, { headers });
+        const data = await res.json();
+        exibirResultado(res, url, data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function executarPost(invalido) {
+      const { url, headers } = obterUrlEHeaders('produtos');
+      const payload = {
+        nome: invalido ? "" : document.getElementById('prod-nome').value.trim(),
+        preco: invalido ? -10.0 : parseFloat(document.getElementById('prod-preco').value),
+        categoria: document.getElementById('prod-categoria').value.trim()
+      };
+
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        exibirResultado(res, url, data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    executarGet();
+  </script>
+</body>
+</html>
