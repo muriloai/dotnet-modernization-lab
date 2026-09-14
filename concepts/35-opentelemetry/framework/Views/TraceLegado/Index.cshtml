@@ -1,0 +1,45 @@
+@{
+    ViewBag.Title = "Tracing Legado no .NET Framework 4.8.1";
+}
+
+<header>
+    <span class="badge-legado">Legado - .NET Framework 4.8.1</span>
+    <h1 style="margin-top: 0.5rem;">System.Diagnostics.TraceSource & CorrelationId</h1>
+    <p style="color: #64748b;">
+        Demonstracao do modelo legado de logs e diagnosticos sem padrao W3C Trace Context e sem suporte a grafos distribuidos de spans.
+    </p>
+</header>
+
+<div class="card">
+    <div class="card-header">Disparo de Pedido Legado</div>
+    <p style="color: #64748b; font-size: 0.9rem;">
+        No .NET Framework, cada chamada gera linhas de log desestruturadas associadas a um CorrelationId ad-hoc em texto.
+    </p>
+    <button onclick="dispararLegado()">Disparar Pedido e Gerar Logs</button>
+
+    <div style="margin-top: 1rem;">
+        <div><strong>Pedido ID:</strong> <span id="leg-id">-</span></div>
+        <div><strong>Correlation ID:</strong> <span id="leg-cid">-</span></div>
+        <div><strong>Tempo:</strong> <span id="leg-time">-</span></div>
+    </div>
+
+    <h4 style="margin-top: 1rem; font-size: 0.9rem;">Logs Gerados:</h4>
+    <pre id="leg-logs">Aguardando execucao...</pre>
+</div>
+
+<script>
+    function dispararLegado() {
+        fetch('/TraceLegado/ProcessarPedidoLegado', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ Cliente: 'Cliente Legado S/A', Produto: 'Servico Monolitico', Valor: 2500 })
+        })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('leg-id').innerText = data.PedidoId;
+            document.getElementById('leg-cid').innerText = data.CorrelationId;
+            document.getElementById('leg-time').innerText = data.TempoExecucaoMs + ' ms';
+            document.getElementById('leg-logs').innerText = JSON.stringify(data.LogsGerados, null, 2);
+        });
+    }
+</script>

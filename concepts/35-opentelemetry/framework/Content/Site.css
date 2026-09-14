@@ -1,0 +1,58 @@
+/* Estilo Legado (.NET Framework 4.8.1) */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f1f5f9;
+  color: #0f172a;
+  margin: 0;
+  padding: 1.5rem;
+}
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+header {
+  border-bottom: 2px solid #cbd5e1;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+.badge-legado {
+  background-color: #991b1b;
+  color: #fff;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: bold;
+  border-radius: 4px;
+}
+.card {
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.card-header {
+  font-size: 1.15rem;
+  font-weight: bold;
+  color: #0284c7;
+  margin-bottom: 0.75rem;
+}
+button {
+  background-color: #0284c7;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:hover {
+  background-color: #0369a1;
+}
+pre {
+  background-color: #1e293b;
+  color: #f8fafc;
+  padding: 0.75rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.85rem;
+}

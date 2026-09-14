@@ -112,6 +112,7 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | [32](concepts/32-minimal-apis/README.md)     | Minimal APIs                         | Controllers pesados do Web API 2, herança obrigatória de ApiController e alto overhead | app.MapGet/MapPost, Route Groups, Endpoint Filters, TypedResults e zero boilerplate |
 | [33](concepts/33-native-aot/README.md)       | Native AOT e Trimming                | RyuJIT em runtime, NGen local frágil, Reflection irrestrita e aquecimento inicial alto | Compilação nativa Ahead-of-Time (<PublishAot>), Trimming agressivo, inicialização em <15ms e memória mínima |
 | [34](concepts/34-hybrid-cache/README.md)     | HybridCache                          | MemoryCache isolado, sem proteção a Cache Stampede, serialização manual e sem tags | Microsoft.Extensions.Caching.Hybrid, L1/L2 unificados, trava contra Cache Stampede e Tag Invalidation |
+| [35](concepts/35-opentelemetry/README.md)    | OpenTelemetry e Aspire               | TraceSource, PerfMon do Windows, CorrelationId manual e logs desestruturados | ActivitySource, System.Diagnostics.Metrics, W3C traceparent e .NET Aspire |
 
 ---
 

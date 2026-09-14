@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conceito 35: OpenTelemetry e Aspire no .NET 10</title>
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="badge">Moderno - .NET 10</span>
+      <h1>Observabilidade com OpenTelemetry & Aspire</h1>
+      <p class="subtitle">
+        Tracing distribuido padrao W3C Trace Context (traceparent), instrumentacao sem reflexao via ActivitySource e metricas estruturadas via System.Diagnostics.Metrics.
+      </p>
+    </header>
+
+    <div class="grid">
+      <!-- Painel 1: Disparo de Operacao Rastreada -->
+      <div class="card">
+        <div class="card-title">Simulador de Transacao de Checkout</div>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
+          Ao disparar um pedido, o servico cria uma raiz de rastreamento com 3 spans filhos (Pagamento, Estoque, Notificacao) propagando o TraceId automaticamente.
+        </p>
+        <div class="form-group">
+          <label>Cliente / Organizacao:</label>
+          <input type="text" id="input-cliente" value="Acme Industrial Corp">
+        </div>
+        <div class="form-group">
+          <label>Item de Compra:</label>
+          <input type="text" id="input-produto" value="Licenca Cloud Platform 2026">
+        </div>
+        <div class="form-group">
+          <label>Valor (BRL):</label>
+          <input type="number" id="input-valor" value="8500.00">
+        </div>
+        <div class="form-group">
+          <label>Forma de Liquidacao:</label>
+          <select id="input-metodo">
+            <option value="Cartao de Credito">Cartao de Credito Corporativo</option>
+            <option value="Pix">Transferencia Instantanea (Pix)</option>
+            <option value="Faturamento Direto">Faturamento Direto 30D</option>
+          </select>
+        </div>
+        <button onclick="processarPedido()">Disparar Checkout com Distributed Tracing</button>
+
+        <div class="stat-box">
+          <div class="stat-row">
+            <span class="stat-label">Pedido ID:</span>
+            <span id="res-order-id" class="stat-value">-</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">W3C TraceId:</span>
+            <span id="res-trace-id" class="stat-value code">-</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">W3C traceparent Header:</span>
+            <span id="res-traceparent" class="stat-value code">-</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Latencia Total:</span>
+            <span id="res-duration" class="stat-value" style="color: var(--accent-success);">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel 2: Metricas OpenTelemetry em Tempo Real -->
+      <div class="card">
+        <div class="card-title">Metricas (System.Diagnostics.Metrics)</div>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
+          Métricas expostas no padrao OTLP consumidas nativamente por Prometheus e o dashboard do .NET Aspire sem necessidade de bibliotecas de terceiros.
+        </p>
+        <div class="stat-box">
+          <div class="stat-row">
+            <span class="stat-label">orders.completed.count:</span>
+            <span id="metric-total-orders" class="stat-value">0</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">orders.processing.duration (Ultimo):</span>
+            <span id="metric-last-duration" class="stat-value">0 ms</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Protocolo de Exportacao:</span>
+            <span class="stat-value" style="color: var(--accent-purple);">OTLP (gRPC/Protobuf)</span>
+          </div>
+        </div>
+
+        <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem; font-size: 0.9rem; color: var(--accent);">Status dos Coletores:</h4>
+        <div style="background: #090d16; border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem; font-size: 0.8rem; font-family: monospace; color: #94a3b8;">
+          [Aspire ServiceDefaults] Tracing ativo via OpenTelemetry.Trace<br>
+          [Aspire ServiceDefaults] Metrics ativo via OpenTelemetry.Metrics<br>
+          [W3C Context] Baggage e Tags injetados no contexto de execucao
+        </div>
+      </div>
+    </div>
+
+    <!-- Painel 3: Cascata de Spans (Trace Waterfall) -->
+    <div class="card" style="margin-bottom: 2rem;">
+      <div class="card-title">
+        <span>Visualizador de Cascata de Spans (Distributed Trace Waterfall)</span>
+      </div>
+      <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
+        Esta cascata reproduz exatamente o que e exibido em ferramentas de observabilidade como Jaeger, Grafana Tempo e .NET Aspire Dashboard:
+      </p>
+
+      <div id="waterfall-container" class="waterfall">
+        <div style="color: var(--text-secondary); font-size: 0.9rem; text-align: center; padding: 2rem;">
+          Clique em "Disparar Checkout com Distributed Tracing" acima para visualizar a árvore de spans.
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparativo Tecnico -->
+    <div class="card">
+      <div class="card-title">Diferencas Tecnicas: .NET Framework 4.8.1 vs .NET 10</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Caracteristica</th>
+            <th>.NET Framework 4.8.1 (Legado)</th>
+            <th>.NET 10 (Moderno)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Rastreamento Distribuido (Tracing)</td>
+            <td>Inexistente de forma nativa. Dependia de logs manuais com CorrelationId ou System.Diagnostics.TraceSource isolado.</td>
+            <td>Nativo via System.Diagnostics.ActivitySource e padrao internacional W3C Trace Context (traceparent / tracestate).</td>
+          </tr>
+          <tr>
+            <td>Propagacao de Contexto</td>
+            <td>CallContext.LogicalGetData ou HttpContext.Current (acoplado a threads do IIS). Nao atravessava chamadas HTTP externas sem headers manuais.</td>
+            <td>AsyncLocal e Activity.Current, com propagacao automatica por HttpClient e integracao em mensagerias.</td>
+          </tr>
+          <tr>
+            <td>Metricas e Instrumentacao</td>
+            <td>PerfMon (Performance Counters do Windows), dependente de registro de DLLs e restrito ao sistema Windows.</td>
+            <td>System.Diagnostics.Metrics (Counter, Histogram, ObservableGauge) compativel com Prometheus e OTLP sem root.</td>
+          </tr>
+          <tr>
+            <td>Integracao de Observabilidade</td>
+            <td>Arquivos .log em disco (log4net, NLog antigo) consumidos por agentes pesados de SO.</td>
+            <td>Exportadores OTLP nativos (gRPC/HTTP), integrados ao .NET Aspire Dashboard, OpenTelemetry Collector e Grafana.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    async function processarPedido() {
+      const payload = {
+        Cliente: document.getElementById('input-cliente').value,
+        Produto: document.getElementById('input-produto').value,
+        Valor: parseFloat(document.getElementById('input-valor').value),
+        MetodoPagamento: document.getElementById('input-metodo').value
+      };
+
+      try {
+        const res = await fetch('/api/orders/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        document.getElementById('res-order-id').textContent = data.orderId;
+        document.getElementById('res-trace-id').textContent = data.traceId;
+        document.getElementById('res-traceparent').textContent = data.w3CTraceParent;
+        document.getElementById('res-duration').textContent = data.durationMs + ' ms';
+
+        renderWaterfall(data.spans, data.durationMs);
+        carregarMetricas();
+      } catch (err) {
+        alert('Erro ao processar pedido: ' + err.message);
+      }
+    }
+
+    function renderWaterfall(spans, totalDuration) {
+      const container = document.getElementById('waterfall-container');
+      container.innerHTML = '';
+
+      spans.forEach((span, idx) => {
+        const widthPct = Math.max(10, Math.min(100, Math.round((span.durationMs / totalDuration) * 100)));
+        const indent = span.parentSpanId ? '2rem' : '0rem';
+
+        const row = document.createElement('div');
+        row.className = 'span-row';
+        row.style.marginLeft = indent;
+
+        let tagsStr = Object.entries(span.tags).map(([k, v]) => `${k}="${v}"`).join(' | ');
+
+        row.innerHTML = `
+          <div class="span-header">
+            <span class="span-name">
+              ${span.name}
+              <span class="span-tag-badge">SpanId: ${span.spanId.substring(0, 8)}...</span>
+            </span>
+            <span class="span-duration">${span.durationMs} ms</span>
+          </div>
+          <div class="span-bar-container">
+            <div class="span-bar-fill" style="width: ${widthPct}%;"></div>
+          </div>
+          <div class="span-attributes">
+            <strong>Atributos:</strong> ${tagsStr}
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    async function carregarMetricas() {
+      try {
+        const res = await fetch('/api/telemetry/metrics');
+        const data = await res.json();
+        document.getElementById('metric-total-orders').textContent = data.totalPedidos;
+        document.getElementById('metric-last-duration').textContent = data.ultimaDuracaoMs + ' ms';
+      } catch (e) {}
+    }
+  </script>
+</body>
+</html>
