@@ -151,3 +151,26 @@ dotnet run
 3. Pressione `Ctrl + F5` para compilar e inicializar no IIS Express.
 
 Para detalhes específicos de cada laboratório, consulte o arquivo `README.md` localizado na pasta de cada conceito.
+
+---
+
+## Documentação Complementar
+
+* [Índice Geral de Conceitos](docs/CONCEPTS-INDEX.md): Mapeamento de todos os 36 conceitos com módulos, portas locais e links diretos.
+* [Resumo Consolidado de Mudanças](docs/CHANGES-SUMMARY.md): Análise detalhada dos saltos arquiteturais e tecnológicos entre o .NET 4.8.1 e o .NET 10.
+* [Guia Rápido de Referência (Cheat Sheet)](docs/CHEAT-SHEET.md): Tabela de referência prática "De -> Para" cobrindo as principais tarefas do cotidiano de desenvolvimento.
+
+---
+
+## Scripts de Automação
+
+O diretório `scripts/` disponibiliza scripts em PowerShell para apoiar a navegação e a verificação do ambiente:
+
+* **Executar um conceito específico:**
+  ```powershell
+  .\scripts\run-concept.ps1 -Concept 36 -Side net10
+  ```
+* **Compilar todos os 36 projetos .NET 10 do laboratório:**
+  ```powershell
+  .\scripts\build-all.ps1
+  ```
