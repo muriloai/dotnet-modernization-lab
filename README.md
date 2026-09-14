@@ -64,6 +64,7 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | [14](concepts/14-rest-apis/README.md)         | Construção de APIs REST              | ApiController (Web API 2), IHttpActionResult e rotas manuais  | [ApiController], ControllerBase, IResult/TypedResults, OpenAPI nativo e Minimal APIs | Concluído    |
 | [15](concepts/15-httpclient/README.md)        | HttpClient e Requisições Externas    | WebClient, HttpWebRequest, new HttpClient() e socket exhaustion | IHttpClientFactory, Typed Clients, SocketsHttpHandler e resiliência | Concluído    |
 | [16](concepts/16-action-filters/README.md)    | Action Filters                       | ActionFilterAttribute em MVC e Web API separados, sem DI e Service Locator | IAsyncActionFilter, ServiceFilter, TypeFilter, DI nativa e Endpoint Filters | Concluído    |
+| [17](concepts/17-signalr/README.md)           | Comunicação em Tempo Real com SignalR | ASP.NET SignalR 2.x, OWIN, dependência de jQuery e proxies mágicos | ASP.NET Core SignalR, Hub fortemente tipado, MessagePack e sem jQuery | Concluído    |
 
 ---
 

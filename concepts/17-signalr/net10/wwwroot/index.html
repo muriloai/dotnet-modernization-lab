@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lab 17: SignalR em Tempo Real (.NET 10)</title>
+    <link rel="stylesheet" href="css/site.css" />
+    <!-- Biblioteca oficial moderna do ASP.NET Core SignalR (Zero jQuery) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header style="margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <span class="badge badge-modern">ASP.NET Core (.NET 10 LTS) - Porta 6700</span>
+                    <h1>Lab 17: Comunicação em Tempo Real com SignalR</h1>
+                    <p class="subtitle">
+                        Demonstração de Hub fortemente tipado (Hub&lt;INotificacaoCliente&gt;), cliente JavaScript moderno sem jQuery,
+                        inscrição em grupos de canais e broadcast externo via injeção de IHubContext.
+                    </p>
+                </div>
+                <div style="text-align: right;">
+                    <div id="badgeStatus" class="status-badge status-offline">Desconectado</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem;">
+                        Conexões Ativas: <strong id="lblConexoes">0</strong> | Mensagens: <strong id="lblTotalMensagens">0</strong>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid-2">
+            <!-- Coluna 1: Ações do Hub -->
+            <div class="card">
+                <h2>1. Operações Diretas no Hub</h2>
+                <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Chamadas bidirecionais executadas diretamente através da conexão WebSocket aberta:
+                </p>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="enviarAlertaGlobal()">
+                        Transmitir Alerta Global
+                        <small>Invoca TransmitirAvisoGlobal no Hub (notifica todos os clientes conectados).</small>
+                    </button>
+
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-secondary" style="flex: 1;" onclick="entrarCanal('Financeiro')">
+                            Entrar no Canal 'Financeiro'
+                            <small>Groups.AddToGroupAsync no Hub.</small>
+                        </button>
+                        <button class="btn btn-secondary" style="flex: 1;" onclick="sairCanal('Financeiro')">
+                            Sair do Canal 'Financeiro'
+                            <small>Groups.RemoveFromGroupAsync.</small>
+                        </button>
+                    </div>
+
+                    <button class="btn btn-warning" onclick="enviarMensagemCanal('Financeiro')">
+                        Transmitir para o Canal 'Financeiro'
+                        <small>Notifica exclusivamente as conexões registradas no grupo 'Financeiro'.</small>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Coluna 2: Broadcast via REST e Arquitetura -->
+            <div class="card">
+                <h2>2. Broadcast Externo via IHubContext</h2>
+                <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+                    Disparo de eventos a partir de controllers REST, filas ou workers assíncronos:
+                </p>
+
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="dispararViaRest()">
+                        Disparar Notificação via REST API
+                        <small>POST /api/notificacoes/disparar-rest (injeta IHubContext para push em massa).</small>
+                    </button>
+                </div>
+
+                <div style="margin-top: 1.25rem; background: #f8f9fa; padding: 0.85rem; border-radius: 6px; border: 1px solid var(--border); font-size: 0.82rem; line-height: 1.6;">
+                    <strong style="color: var(--dark);">Vantagens do SignalR Moderno:</strong>
+                    <ul style="padding-left: 1.25rem; margin-top: 0.35rem; color: var(--text);">
+                        <li><strong>Sem jQuery:</strong> O cliente oficial usa JavaScript nativo moderno em padrão ES6.</li>
+                        <li><strong>Tipagem Estrita:</strong> Hub&lt;TClient&gt; elimina erros de nomes de métodos em strings mágicas.</li>
+                        <li><strong>Reconexão Automática:</strong> withAutomaticReconnect() lida com oscilações de rede sem travamentos.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Painel de Eventos Recebidos em Tempo Real -->
+        <div class="result-area">
+            <div class="result-header">
+                <div>
+                    <strong>Log de Eventos em Tempo Real (WebSocket / SignalR):</strong>
+                </div>
+                <button class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" onclick="limparEventos()">
+                    Limpar Log
+                </button>
+            </div>
+
+            <div id="listaEventos">
+                <div style="color: #a0a0b0; font-size: 0.84rem; text-align: center; padding: 1rem;">
+                    Aguardando conexão com o Hub do .NET 10...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let connection = null;
+
+        function inicializarSignalR() {
+            const badgeStatus = document.getElementById('badgeStatus');
+
+            if (typeof signalR === 'undefined') {
+                badgeStatus.textContent = 'Erro: Biblioteca SignalR não carregada';
+                badgeStatus.className = 'status-badge status-offline';
+                return;
+            }
+
+            // Criação da conexão SignalR moderna com reconexão automática nativa
+            connection = new signalR.HubConnectionBuilder()
+                .withUrl('/hubs/notificacoes')
+                .withAutomaticReconnect()
+                .build();
+
+            // 1. Evento de notificação geral (definido na interface C# INotificacaoCliente)
+            connection.on('ReceberNotificacao', function (evento) {
+                adicionarEventoAoLog(evento);
+            });
+
+            // 2. Evento direcionado para grupos de canais
+            connection.on('ReceberMensagemGrupo', function (canal, evento) {
+                adicionarEventoAoLog(evento, true);
+            });
+
+            // 3. Atualização de métricas de conexões ativas
+            connection.on('AtualizarMetricas', function (metricas) {
+                document.getElementById('lblConexoes').textContent = metricas.conexoesAtivas;
+                document.getElementById('lblTotalMensagens').textContent = metricas.totalMensagensTrafegadas;
+            });
+
+            connection.start()
+                .then(function () {
+                    badgeStatus.textContent = 'Conectado (WebSockets)';
+                    badgeStatus.className = 'status-badge status-online';
+                })
+                .catch(function (err) {
+                    badgeStatus.textContent = 'Falha de Conexão';
+                    badgeStatus.className = 'status-badge status-offline';
+                    console.error('Erro ao conectar no SignalR:', err);
+                });
+
+            connection.onreconnecting(function () {
+                badgeStatus.textContent = 'Reconectando...';
+                badgeStatus.className = 'status-badge status-offline';
+            });
+
+            connection.onreconnected(function () {
+                badgeStatus.textContent = 'Reconectado';
+                badgeStatus.className = 'status-badge status-online';
+            });
+        }
+
+        function adicionarEventoAoLog(evento, ehGrupo) {
+            const lista = document.getElementById('listaEventos');
+
+            // Remove mensagem inicial de aguardando se existir
+            if (lista.children.length === 1 && lista.children[0].tagName === 'DIV' && lista.children[0].id !== 'item-evento') {
+                lista.innerHTML = '';
+            }
+
+            const item = document.createElement('div');
+            item.className = 'event-item';
+            item.id = 'item-evento';
+            if (ehGrupo) {
+                item.style.borderLeftColor = 'var(--warning)';
+            }
+
+            const data = new Date(evento.dataHoraUtc).toLocaleTimeString();
+
+            item.innerHTML = `
+                <div class="event-canal">
+                    <span>[Canal: ${evento.canal}]</span> - <span>${data}</span> - <span>ID: ${evento.id}</span>
+                </div>
+                <div class="event-titulo">${evento.titulo}</div>
+                <div class="event-msg">${evento.mensagem}</div>
+            `;
+
+            lista.insertBefore(item, lista.firstChild);
+        }
+
+        function limparEventos() {
+            document.getElementById('listaEventos').innerHTML = `
+                <div style="color: #a0a0b0; font-size: 0.84rem; text-align: center; padding: 1rem;">
+                    Log limpo. Novos eventos aparecerão aqui automaticamente.
+                </div>
+            `;
+        }
+
+        async function enviarAlertaGlobal() {
+            if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
+                alert('A conexão com o SignalR ainda não está ativa.');
+                return;
+            }
+
+            const randomId = Math.floor(100 + Math.random() * 900);
+            await connection.invoke('TransmitirAvisoGlobal',
+                'Alerta do Sistema #' + randomId,
+                'Notificação global transmitida diretamente através do Hub fortemente tipado no .NET 10.'
+            );
+        }
+
+        async function entrarCanal(canal) {
+            if (!connection) return;
+            await connection.invoke('EntrarNoCanal', canal);
+        }
+
+        async function sairCanal(canal) {
+            if (!connection) return;
+            await connection.invoke('SairDoCanal', canal);
+        }
+
+        async function enviarMensagemCanal(canal) {
+            if (!connection) return;
+            await connection.invoke('TransmitirParaCanal',
+                canal,
+                'Mensagem Reservada de ' + canal,
+                'Esta mensagem foi entregue apenas para clientes registrados no grupo ' + canal + '.'
+            );
+        }
+
+        async function dispararViaRest() {
+            const randomId = Math.floor(1000 + Math.random() * 9000);
+            await fetch('/api/notificacoes/disparar-rest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    Titulo: 'Disparo via REST API #' + randomId,
+                    Mensagem: 'Notificação enviada a partir de endpoint HTTP comum utilizando IHubContext.',
+                    Canal: 'Global'
+                })
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', inicializarSignalR);
+    </script>
+</body>
+</html>

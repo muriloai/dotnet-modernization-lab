@@ -1,0 +1,179 @@
+@{
+    ViewBag.Title = "Painel SignalR Legado";
+}
+
+<div style="margin-bottom: 2rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h2>Comunicação em Tempo Real com SignalR 2.x</h2>
+            <p class="subtitle">
+                Demonstração da dependência obrigatória de <code>jQuery</code>, proxies dinâmicos gerados em <code>/signalr/hubs</code>
+                e chamadas com tipagem dinâmica (<code>dynamic</code>) no servidor.
+            </p>
+        </div>
+        <div style="text-align: right;">
+            <div id="badgeStatus" class="status-badge status-offline">Desconectado</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.35rem;">
+                Conexões Ativas: <strong id="lblConexoes">0</strong> | Mensagens: <strong id="lblMensagens">0</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <!-- Coluna de Ações -->
+    <div class="card">
+        <h3>Operações no Hub Clássico ($.connection)</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Chamadas aos métodos do servidor via proxy gerado automaticamente pelo IIS/OWIN:
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <button class="btn btn-primary" onclick="enviarAvisoGlobal()">
+                Transmitir Alerta Global
+                <small>hub.server.transmitirAvisoGlobal (notifica todos os clientes).</small>
+            </button>
+
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-secondary" style="flex: 1;" onclick="entrarCanal('Financeiro')">
+                    Entrar no Canal 'Financeiro'
+                    <small>hub.server.entrarNoCanal</small>
+                </button>
+                <button class="btn btn-secondary" style="flex: 1;" onclick="sairCanal('Financeiro')">
+                    Sair do Canal 'Financeiro'
+                    <small>hub.server.sairDoCanal</small>
+                </button>
+            </div>
+
+            <button class="btn btn-warning" onclick="enviarMensagemCanal('Financeiro')">
+                Transmitir para Canal 'Financeiro'
+                <small>hub.server.transmitirParaCanal (direcionado a membros do grupo).</small>
+            </button>
+        </div>
+    </div>
+
+    <!-- Coluna de Explicação Técnica -->
+    <div class="card">
+        <h3>Fragilidades do Modelo Legado</h3>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Limitações que levaram à reescrita completa no ASP.NET Core:
+        </p>
+
+        <ul style="font-size: 0.88rem; line-height: 1.7; padding-left: 1.25rem; color: var(--text); margin-bottom: 1.25rem;">
+            <li><strong>Dependência Estrita de jQuery:</strong> O cliente web clássico não funcionava sem carregar o script do jQuery no DOM.</li>
+            <li><strong>Proxies Dinâmicos no Servidor:</strong> A rota <code>/signalr/hubs</code> gerava JavaScript em tempo de execução via reflexão pesada.</li>
+            <li><strong>Tipagem Dinâmica Fraca:</strong> <code>Clients.All</code> era <code>dynamic</code>, sem verificação de assinatura em tempo de compilação.</li>
+        </ul>
+
+        <div style="background: #f8f9fa; padding: 1rem; border-radius: 6px; border: 1px solid var(--border); font-size: 0.85rem;">
+            <strong>Evolução no .NET 10:</strong> No .NET 10, o SignalR não usa jQuery, suporta MessagePack binário ultrarrápido e utiliza <code>Hub&lt;TClient&gt;</code> fortemente tipado.
+        </div>
+    </div>
+</div>
+
+<!-- Console de Resultados -->
+<div class="result-area">
+    <div class="result-header">
+        <div>
+            <strong>Log de Eventos em Tempo Real (ASP.NET SignalR 2.x):</strong>
+        </div>
+        <button class="btn btn-secondary" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" onclick="limparEventos()">
+            Limpar Log
+        </button>
+    </div>
+
+    <div id="listaEventos">
+        <div style="color: #a0a0b0; font-size: 0.84rem; text-align: center; padding: 1rem;">
+            Aguardando conexão com o SignalR 2.x...
+        </div>
+    </div>
+</div>
+
+<script>
+    var hubProxy = null;
+
+    $(function () {
+        var badgeStatus = $('#badgeStatus');
+
+        // Referência ao proxy gerado dinamicamente para o NotificacoesLegadasHub
+        if ($.connection && $.connection.notificacoesLegadasHub) {
+            hubProxy = $.connection.notificacoesLegadasHub;
+
+            // Registro dos manipuladores de cliente
+            hubProxy.client.receberNotificacao = function (id, titulo, mensagem, canal, dataHora) {
+                adicionarEventoAoLog(id, titulo, mensagem, canal, dataHora, false);
+            };
+
+            hubProxy.client.receberMensagemGrupo = function (canal, id, titulo, mensagem, dataHora) {
+                adicionarEventoAoLog(id, titulo, mensagem, canal, dataHora, true);
+            };
+
+            hubProxy.client.atualizarMetricas = function (conexoes, mensagens) {
+                $('#lblConexoes').text(conexoes);
+                $('#lblMensagens').text(mensagens);
+            };
+
+            // Inicia a conexão através do $.connection.hub.start()
+            $.connection.hub.start()
+                .done(function () {
+                    badgeStatus.text('Conectado (SignalR 2.x)');
+                    badgeStatus.removeClass('status-offline').addClass('status-online');
+                })
+                .fail(function (err) {
+                    badgeStatus.text('Falha na Conexão');
+                    badgeStatus.removeClass('status-online').addClass('status-offline');
+                    console.error('Erro ao conectar ao SignalR legado:', err);
+                });
+        } else {
+            badgeStatus.text('Proxy /signalr/hubs Indisponível');
+        }
+    });
+
+    function adicionarEventoAoLog(id, titulo, mensagem, canal, dataHora, ehGrupo) {
+        var lista = $('#listaEventos');
+        if (lista.find('.event-item').length === 0) {
+            lista.empty();
+        }
+
+        var bordaCor = ehGrupo ? 'var(--warning)' : 'var(--primary)';
+        var html = '<div class="event-item" style="border-left-color: ' + bordaCor + ';">' +
+            '<div class="event-canal">[Canal: ' + canal + '] - ' + dataHora + ' - ID: ' + id + '</div>' +
+            '<div class="event-titulo">' + titulo + '</div>' +
+            '<div class="event-msg">' + mensagem + '</div>' +
+            '</div>';
+
+        lista.prepend(html);
+    }
+
+    function limparEventos() {
+        $('#listaEventos').html('<div style="color: #a0a0b0; font-size: 0.84rem; text-align: center; padding: 1rem;">Log limpo. Novos eventos aparecerão aqui automaticamente.</div>');
+    }
+
+    function enviarAvisoGlobal() {
+        if (!hubProxy) return;
+        var randomId = Math.floor(100 + Math.random() * 900);
+        hubProxy.server.transmitirAvisoGlobal(
+            'Alerta Legado #' + randomId,
+            'Notificação global emitida via proxy dinâmico do ASP.NET SignalR 2.x.'
+        );
+    }
+
+    function entrarCanal(canal) {
+        if (!hubProxy) return;
+        hubProxy.server.entrarNoCanal(canal);
+    }
+
+    function sairCanal(canal) {
+        if (!hubProxy) return;
+        hubProxy.server.sairDoCanal(canal);
+    }
+
+    function enviarMensagemCanal(canal) {
+        if (!hubProxy) return;
+        hubProxy.server.transmitirParaCanal(
+            canal,
+            'Mensagem Reservada Legada (' + canal + ')',
+            'Mensagem transmitida para o grupo ' + canal + ' no .NET Framework 4.8.1.'
+        );
+    }
+</script>
