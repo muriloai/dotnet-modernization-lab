@@ -1,0 +1,101 @@
+@{
+    ViewBag.Title = "Conceito 20: Health Checks (Legado)";
+    bool falhaBanco = ViewBag.FalhaBanco ?? false;
+}
+
+<header>
+    <div class="header-title-row">
+        <div>
+            <h1>Conceito 20: Health Checks e Diagnósticos</h1>
+            <p class="subtitle">Laboratório comparativo: Handlers .ashx e controllers manuais no .NET Framework 4.8.1</p>
+        </div>
+        <span class="badge-dotnet">.NET Framework 4.8.1 (IIS Express - Porta 7001)</span>
+    </div>
+</header>
+
+<div class="grid">
+    <div class="card">
+        <h2>Simulação de Dependência Legada</h2>
+        <p class="subtitle" style="margin-bottom: 1rem;">
+            No modelo tradicional, uma falha de banco de dados impactava o endpoint de ping global, gerando falsos positivos de processo inoperante para balanceadores.
+        </p>
+
+        <div style="background-color: var(--bg-primary); padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Estado Atual do Banco:</span>
+                <span class="status-pill @(falhaBanco ? "status-Unhealthy" : "status-Healthy")">
+                    @(falhaBanco ? "Inacessível (Falha Simulada)" : "Operacional (SELECT 1 OK)")
+                </span>
+            </div>
+        </div>
+
+        @using (Html.BeginForm("AlternarBanco", "Home", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="falha" value="@((!falhaBanco).ToString().ToLower())" />
+            <button type="submit" class="@(falhaBanco ? "btn-success" : "btn-danger")" style="width: 100%;">
+                @(falhaBanco ? "Restaurar Conexão com o Banco" : "Simular Queda do Banco de Dados")
+            </button>
+        }
+
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+            <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">Testar Endpoints Legados</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                <a href="/ping.ashx" target="_blank" class="btn-primary" style="text-decoration: none; text-align: center;">
+                    Abrir /ping.ashx (IHttpHandler em Texto Plano)
+                </a>
+                <a href="/Status" target="_blank" class="btn-secondary" style="text-decoration: none; text-align: center;">
+                    Abrir /Status (Controller MVC com JSON Proprietário)
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Como o Legado se Comporta</h2>
+        <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+            <p style="margin-bottom: 0.75rem;">
+                <strong>1. Handler ping.ashx:</strong> Implementação manual de <code>IHttpHandler</code> que executa uma chamada de teste e responde com <code>text/plain</code> contendo a string "OK" ou código 500 com mensagem de erro.
+            </p>
+            <p style="margin-bottom: 0.75rem;">
+                <strong>2. Inexistência de Probes Segregadas:</strong> Se o banco de dados cair, o <code>/ping.ashx</code> falha. Em balanceadores que monitoram apenas esse endpoint, o IIS ou balanceador marca a instância como morta, reciclando o AppPool inutilmente.
+            </p>
+            <p style="margin-bottom: 0.75rem;">
+                <strong>3. JSON Proprietário em Controllers:</strong> Equipes criavam controllers manuais retornando <code>Json(new { status = "OK", db = true })</code>. Não havia padrão entre microsserviços diferentes.
+            </p>
+            <p>
+                <strong>4. Diagnósticos do Windows:</strong> Dependência de Performance Counters do Windows (ex.: requisições por segundo, memória privada) que exigiam permissões elevadas de administrador.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Limitações Arquiteturais do Modelo Tradicional</h2>
+    <table class="comparison-table">
+        <thead>
+            <tr>
+                <th>Característica</th>
+                <th>Comportamento no .NET Framework 4.8.1</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Padronização</strong></td>
+                <td>Nenhuma padronização na plataforma. Cada sistema criava sua própria convenção de rotas e formatos de retorno.</td>
+            </tr>
+            <tr>
+                <td><strong>Liveness vs Readiness</strong></td>
+                <td>Impossível separar nativamente se o processo está vivo ou se apenas uma dependência está temporariamente fora.</td>
+            </tr>
+            <tr>
+                <td><strong>Estados Tipados</strong></td>
+                <td>Apenas código HTTP binário (200 ou 500). Não existia o conceito de degradação semântica de serviço.</td>
+            </tr>
+            <tr>
+                <td><strong>Nuvem e Contêineres</strong></td>
+                <td>Incompatível com sondas nativas do Kubernetes sem adaptações manuais e parsing de strings.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>

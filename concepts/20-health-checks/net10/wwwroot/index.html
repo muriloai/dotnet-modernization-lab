@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conceito 20: Health Checks e Diagnósticos (.NET 10)</title>
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-title-row">
+        <div>
+          <h1>Conceito 20: Health Checks e Diagnósticos</h1>
+          <p class="subtitle">Laboratório comparativo: IHealthCheck, liveness e readiness probes nativas no .NET 10</p>
+        </div>
+        <span class="badge-dotnet">.NET 10 (Kestrel - Porta 7000)</span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Simulação de Dependências Externas</h2>
+        <p class="subtitle" style="margin-bottom: 1rem;">
+          Alterne o estado das dependências para simular cenários de alta latência ou indisponibilidade e observe como as sondas de liveness e readiness reagem de forma desacoplada.
+        </p>
+
+        <div class="resource-row">
+          <div>
+            <div class="resource-name">Banco de Dados Relacional</div>
+            <div class="resource-desc">Verificação registrada com a tag <code>ready</code></div>
+          </div>
+          <div class="button-group-sm">
+            <button type="button" id="btnBancoSaudavel" class="btn-success">Saudável</button>
+            <button type="button" id="btnBancoDegradado" class="btn-warning">Degradado</button>
+            <button type="button" id="btnBancoInoperante" class="btn-danger">Inoperante</button>
+          </div>
+        </div>
+
+        <div class="resource-row">
+          <div>
+            <div class="resource-name">Broker de Mensageria (RabbitMQ)</div>
+            <div class="resource-desc">Verificação registrada com a tag <code>ready</code></div>
+          </div>
+          <div class="button-group-sm">
+            <button type="button" id="btnMensageriaOnline" class="btn-success">Online</button>
+            <button type="button" id="btnMensageriaOffline" class="btn-danger">Offline</button>
+          </div>
+        </div>
+
+        <div class="resource-row">
+          <div>
+            <div class="resource-name">Memória e Processo do Host</div>
+            <div class="resource-desc">Verificação registrada com as tags <code>live</code> e <code>ready</code></div>
+          </div>
+          <div>
+            <span class="status-pill status-Healthy">Automático (GC)</span>
+          </div>
+        </div>
+
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+          <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">Testar Sondas do Orquestrador</h3>
+          <div class="probe-grid">
+            <button type="button" id="btnTestarLive" class="btn-primary">
+              Liveness Probe
+              <div style="font-size: 0.7rem; opacity: 0.85;">GET /health/live</div>
+            </button>
+            <button type="button" id="btnTestarReady" class="btn-primary">
+              Readiness Probe
+              <div style="font-size: 0.7rem; opacity: 0.85;">GET /health/ready</div>
+            </button>
+            <button type="button" id="btnTestarCompleto" class="btn-secondary">
+              Relatório Completo
+              <div style="font-size: 0.7rem; opacity: 0.85;">GET /health</div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Resposta HTTP da Sonda</h2>
+        <div class="response-box">
+          <div class="response-status-bar">
+            <span id="labelEndpoint" style="color: var(--text-secondary);">Nenhuma sonda executada</span>
+            <span id="statusBadge" class="status-pill status-Healthy" style="display: none;">Status</span>
+          </div>
+          <pre><code id="corpoResposta">// Clique em uma das sondas para verificar a integridade dos serviços.</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Comparativo Arquitetural: Legado vs Moderno</h2>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Característica</th>
+            <th>.NET Framework 4.8.1 (Legado)</th>
+            <th>.NET 10 (Moderno)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Suporte Nativo</strong></td>
+            <td>Inexistente. Exigia a criação de arquivos manuais .ashx (IHttpHandler) ou controllers de ping retornando "OK".</td>
+            <td>Nativo via middleware Microsoft.AspNetCore.Diagnostics.HealthChecks e interface IHealthCheck.</td>
+          </tr>
+          <tr>
+            <td><strong>Segregação de Probes</strong></td>
+            <td>Nenhuma. Se o banco falhasse, o ping falhava e balanceadores ou scripts reiniciavam a aplicação inteira em loop.</td>
+            <td>Nativa. /health/live avalia a saúde do processo e /health/ready avalia dependências para receber tráfego.</td>
+          </tr>
+          <tr>
+            <td><strong>Estados de Integridade</strong></td>
+            <td>Binário não padronizado (200 OK ou 500 Erro interno).</td>
+            <td>Tipado formalmente em três níveis: Healthy, Degraded (latência elevada) e Unhealthy.</td>
+          </tr>
+          <tr>
+            <td><strong>Formato de Resposta</strong></td>
+            <td>Texto plano ou JSON inventado por cada equipe de desenvolvimento.</td>
+            <td>Formatação estruturada rica com detalhes por componente, durações em milissegundos e dados contextuais.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const labelEndpoint = document.getElementById('labelEndpoint');
+    const statusBadge = document.getElementById('statusBadge');
+    const corpoResposta = document.getElementById('corpoResposta');
+
+    async function executarSonda(rota) {
+      labelEndpoint.textContent = `GET ${rota}`;
+      corpoResposta.textContent = 'Consultando endpoint de integridade...';
+      statusBadge.style.display = 'none';
+
+      try {
+        const resposta = await fetch(rota);
+        const statusHttp = resposta.status;
+        const dados = await resposta.json();
+
+        statusBadge.textContent = `${statusHttp} - ${dados.statusGeral || 'OK'}`;
+        statusBadge.className = 'status-pill status-' + (dados.statusGeral || (statusHttp === 200 ? 'Healthy' : 'Unhealthy'));
+        statusBadge.style.display = 'inline-block';
+
+        corpoResposta.textContent = JSON.stringify(dados, null, 2);
+      } catch (err) {
+        corpoResposta.textContent = 'Erro ao consultar sonda: ' + err.message;
+      }
+    }
+
+    async function atualizarEstado(url, payload) {
+      try {
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        await executarSonda('/health/ready');
+      } catch (err) {
+        console.error('Erro ao configurar estado:', err);
+      }
+    }
+
+    document.getElementById('btnBancoSaudavel').addEventListener('click', () => {
+      atualizarEstado('/api/simulador/configurar-banco', { disponivel: true, degradado: false });
+    });
+
+    document.getElementById('btnBancoDegradado').addEventListener('click', () => {
+      atualizarEstado('/api/simulador/configurar-banco', { disponivel: true, degradado: true });
+    });
+
+    document.getElementById('btnBancoInoperante').addEventListener('click', () => {
+      atualizarEstado('/api/simulador/configurar-banco', { disponivel: false, degradado: false });
+    });
+
+    document.getElementById('btnMensageriaOnline').addEventListener('click', () => {
+      atualizarEstado('/api/simulador/configurar-mensageria', { disponivel: true });
+    });
+
+    document.getElementById('btnMensageriaOffline').addEventListener('click', () => {
+      atualizarEstado('/api/simulador/configurar-mensageria', { disponivel: false });
+    });
+
+    document.getElementById('btnTestarLive').addEventListener('click', () => {
+      executarSonda('/health/live');
+    });
+
+    document.getElementById('btnTestarReady').addEventListener('click', () => {
+      executarSonda('/health/ready');
+    });
+
+    document.getElementById('btnTestarCompleto').addEventListener('click', () => {
+      executarSonda('/health');
+    });
+
+    // Executa sonda inicial de readiness ao carregar a página
+    executarSonda('/health/ready');
+  </script>
+</body>
+</html>

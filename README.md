@@ -72,6 +72,7 @@ Desta forma, cada laboratório pode ser compilado, executado e inspecionado indi
 | --------------------------------------------- | ------------------------------------ | ------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | [18](concepts/18-logging/README.md)           | Logging                              | System.Diagnostics.Trace, listeners em Web.config e strings  | Microsoft.Extensions.Logging, ILogger<T>, structured logging e scopes    |
 | [19](concepts/19-error-handling/README.md)    | Tratamento de Erros                  | Application_Error, HandleErrorAttribute e customErrors no Web.config | IExceptionHandler, UseExceptionHandler e RFC 7807/9457 ProblemDetails   |
+| [20](concepts/20-health-checks/README.md)     | Health Checks e Diagnósticos         | Handlers manuais .ashx (ping/status), SELECT 1 e PerformanceCounters | AddHealthChecks, IHealthCheck, liveness/readiness probes e métricas nativas |
 
 ---
 
