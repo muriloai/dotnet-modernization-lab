@@ -1,0 +1,101 @@
+@using AsyncAwaitDemo.Models
+@{
+    ViewBag.Title = "Conceito 25: Evolução de Async e Await (Legado)";
+    List<EventoStreamLegado> eventos = ViewBag.Eventos;
+}
+
+<header>
+    <div class="header-title-row">
+        <div>
+            <h1>Conceito 25: Evolução de Async e Await</h1>
+            <p class="subtitle">Laboratório comparativo: AspNetSynchronizationContext, buffering forçado e ausência de IAsyncEnumerable no .NET Framework 4.8.1</p>
+        </div>
+        <span class="badge-dotnet">.NET Framework 4.8.1 (IIS Express - Porta 7501)</span>
+    </div>
+</header>
+
+<div class="grid">
+    <div class="card">
+        <h2>Materialização em Memória (Task&lt;List&lt;T&gt;&gt;)</h2>
+        <p class="subtitle" style="margin-bottom: 1rem;">
+            No .NET Framework 4.8.1, o consumo assíncrono de coleções não suportava streaming elemento a elemento para o navegador. Todo o lote precisava ser materializado em uma lista antes do envio.
+        </p>
+
+        @using (Html.BeginForm("ObterLote", "Home", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <div class="form-group">
+                <label for="total">Quantidade de Itens:</label>
+                <input type="number" id="total" name="total" class="form-control" value="@(ViewBag.TotalSolicitado ?? 5)" min="1" max="20" />
+            </div>
+            <button type="submit" class="btn-primary" style="width: 100%;">
+                Carregar Lote Completo (com Delay de 250ms por item)
+            </button>
+        }
+
+        @if (eventos != null)
+        {
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                <p style="font-size: 0.85rem; color: var(--accent); margin-bottom: 0.5rem;">
+                    @ViewBag.AvisoBuffering
+                </p>
+                <div style="background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.75rem; font-family: var(--font-mono); font-size: 0.85rem;">
+                    @foreach (var ev in eventos)
+                    {
+                        <div style="padding: 0.25rem 0; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            [@ev.Timestamp.ToString("HH:mm:ss.fff")] @ev.Descricao
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="card">
+        <h2>Armadilhas do AspNetSynchronizationContext</h2>
+        <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+            <p style="margin-bottom: 0.75rem;">
+                <strong>1. O Deadlock do .Result / .Wait():</strong> No ASP.NET clássico, as requisições possuíam um contexto de sincronização exclusivo. Invocar <code>MinhaTaskAsync().Result</code> bloqueava a thread esperando a Task. A Task, por sua vez, tentava retomar no mesmo contexto já ocupado pela thread bloqueada, congelando o processo.
+            </p>
+            <p style="margin-bottom: 0.75rem;">
+                <strong>2. Poluição com ConfigureAwait(false):</strong> Para evitar que bibliotecas internas travassem, desenvolvedores precisavam lembrar de sufixar cada chamada assíncrona com <code>.ConfigureAwait(false)</code>.
+            </p>
+            <p style="margin-bottom: 0.75rem;">
+                <strong>3. Alocação de Task vs ValueTask:</strong> Toda chamada assíncrona criava um objeto na Heap, gerando pressão de GC mesmo em leituras de cache instantâneas.
+            </p>
+            <p>
+                <strong>4. Falta de combinadores:</strong> O consumo de tarefas paralelas exigia <code>Task.WhenAll</code> que aguarda o item mais lento de todos, ou loops manuais complexos com <code>Task.WhenAny</code>.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Limitações Arquiteturais do Modelo Tradicional</h2>
+    <table class="comparison-table">
+        <thead>
+            <tr>
+                <th>Característica</th>
+                <th>Comportamento no .NET Framework 4.8.1</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Contexto de Sincronização</strong></td>
+                <td>AspNetSynchronizationContext ativo, criando alto risco de deadlocks ao misturar código síncrono e assíncrono.</td>
+            </tr>
+            <tr>
+                <td><strong>Streaming</strong></td>
+                <td>Ausência de IAsyncEnumerable. Impossível emitir itens sob demanda conforme a leitura do banco de dados.</td>
+            </tr>
+            <tr>
+                <td><strong>Eficiência de Memória</strong></td>
+                <td>Task aloca na Heap mesmo em conclusões imediatas.</td>
+            </tr>
+            <tr>
+                <td><strong>Tratamento de Exceções</strong></td>
+                <td>Métodos async void não capturam exceções adequadamente, derrubando o AppPool do IIS.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>

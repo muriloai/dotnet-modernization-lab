@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Conceito 25: Evolução de Async e Await (.NET 10)</title>
+    <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-title-row">
+                <div>
+                    <h1>Conceito 25: Evolução de Async e Await</h1>
+                    <p class="subtitle">IAsyncEnumerable com streaming HTTP, ValueTask com zero-allocation e combinador Task.WhenEach no .NET 10</p>
+                </div>
+                <span class="badge-dotnet">.NET 10 (Kestrel - Porta 7500)</span>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-button active" onclick="alternarAba('stream')">1. Streaming com IAsyncEnumerable</button>
+            <button class="tab-button" onclick="alternarAba('valuetask')">2. Task vs ValueTask</button>
+            <button class="tab-button" onclick="alternarAba('wheneach')">3. Combinador Task.WhenEach</button>
+        </div>
+
+        <!-- ABA 1: STREAMING -->
+        <div id="aba-stream" class="tab-content active">
+            <div class="grid">
+                <div class="card">
+                    <h2>Streaming Contínuo de Dados</h2>
+                    <p class="subtitle" style="margin-bottom: 1rem;">
+                        No .NET 10, endpoints podem retornar <code>IAsyncEnumerable&lt;T&gt;</code>. Os itens são transmitidos para o cliente à medida que ficam prontos, sem buffering ou carregamento de coleções completas na memória do servidor.
+                    </p>
+
+                    <button id="btn-stream" class="btn-primary" onclick="iniciarStream()" style="width: 100%;">
+                        Consumir Stream Assíncrono (/api/async/stream)
+                    </button>
+
+                    <div style="margin-top: 1.5rem; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+                        <p><strong>Comportamento observado:</strong></p>
+                        <p>Cada registro é exibido no feed assim que o servidor emite o <code>yield return</code>, sem aguardar o fechamento da requisição HTTP.</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Feed em Tempo Real</h2>
+                    <div id="stream-feed" class="stream-feed">
+                        <div style="color: var(--text-secondary);">Aguardando início do stream...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 2: VALUETASK -->
+        <div id="aba-valuetask" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <h2>Benchmark de Alocação de Heap</h2>
+                    <p class="subtitle" style="margin-bottom: 1rem;">
+                        Quando uma operação assíncrona completa imediatamente (ex.: dado em cache), retornar <code>Task&lt;T&gt;</code> aloca um objeto de referência na Heap. Com <code>ValueTask&lt;T&gt;</code>, o retorno é por valor (struct), gerando zero alocação.
+                    </p>
+
+                    <button class="btn-primary" onclick="compararAlocacoes()" style="width: 100%;">
+                        Executar 100.000 Chamadas Síncronas Imediatas
+                    </button>
+
+                    <div id="loading-valuetask" style="display: none; margin-top: 1rem; color: var(--accent);">
+                        Medindo bytes alocados na thread para Task vs ValueTask...
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Resultado de Alocação</h2>
+                    <div id="painel-valuetask" style="display: none;">
+                        <div class="grid" style="margin-bottom: 1rem;">
+                            <div>
+                                <h3 style="font-size: 0.95rem; color: var(--danger); margin-bottom: 0.5rem;">Modo Task&lt;T&gt; (Heap)</h3>
+                                <div class="metric-box">
+                                    <div class="metric-title">Tempo de Execução</div>
+                                    <div id="val-task-tempo" class="metric-value">0 ms</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-title">Memória Alocada</div>
+                                    <div id="val-task-memoria" class="metric-value metric-danger">0 MB</div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 style="font-size: 0.95rem; color: var(--success); margin-bottom: 0.5rem;">Modo ValueTask&lt;T&gt; (Pilha)</h3>
+                                <div class="metric-box">
+                                    <div class="metric-title">Tempo de Execução</div>
+                                    <div id="val-vtask-tempo" class="metric-value">0 ms</div>
+                                </div>
+                                <div class="metric-box">
+                                    <div class="metric-title">Memória Alocada</div>
+                                    <div id="val-vtask-memoria" class="metric-value metric-success">0 MB</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="val-diagnostico" style="font-size: 0.85rem; line-height: 1.6; color: var(--text-primary); background-color: var(--bg-primary); padding: 1rem; border-radius: 6px; border: 1px solid var(--border-color);">
+                        </div>
+                    </div>
+
+                    <div id="placeholder-valuetask" style="padding: 2.5rem; text-align: center; color: var(--text-secondary); font-size: 0.9rem;">
+                        Clique no botão ao lado para executar o teste comparativo.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ABA 3: WHEN-EACH -->
+        <div id="aba-wheneach" class="tab-content">
+            <div class="grid">
+                <div class="card">
+                    <h2>Processamento por Ordem de Conclusão</h2>
+                    <p class="subtitle" style="margin-bottom: 1rem;">
+                        O método <code>Task.WhenEach</code> consome um conjunto de tarefas concorrentes entregando o resultado conforme cada uma finaliza, eliminando a lentidão imposta por <code>Task.WhenAll</code> quando uma única tarefa atrasa o lote.
+                    </p>
+
+                    <button class="btn-primary" onclick="executarWhenEach()" style="width: 100%;">
+                        Disparar 5 Operações Desordenadas (150ms a 900ms)
+                    </button>
+
+                    <div id="loading-wheneach" style="display: none; margin-top: 1rem; color: var(--accent);">
+                        Processando tarefas em paralelo e recebendo em ordem de chegada...
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Ordem Real de Finalização</h2>
+                    <div id="wheneach-feed" class="stream-feed">
+                        <div style="color: var(--text-secondary);">Aguardando disparo das tarefas...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Quadro Comparativo: .NET Framework 4.8.1 vs .NET 10</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Característica Assíncrona</th>
+                        <th>.NET Framework 4.8.1 (Legado)</th>
+                        <th>.NET 10 (Moderno)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Contexto de Sincronização</strong></td>
+                        <td>AspNetSynchronizationContext: risco de deadlocks ao usar .Result ou .Wait()</td>
+                        <td>Sem SynchronizationContext no ASP.NET Core: threads livres do threadpool</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Uso de ConfigureAwait(false)</strong></td>
+                        <td>Obrigatório em camadas internas para tentar escapar de deadlocks</td>
+                        <td>Dispensável em código de aplicação ASP.NET Core</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Streaming de Coleções</strong></td>
+                        <td>Materialização forçada em Task&lt;List&lt;T&gt;&gt; na memória do servidor</td>
+                        <td>IAsyncEnumerable&lt;T&gt; transmitido elemento a elemento via HTTP</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Retorno Síncrono Eficiente</strong></td>
+                        <td>Alocação obrigatória de objeto Task na Heap mesmo em retornos de cache</td>
+                        <td>ValueTask&lt;T&gt; evita alocação na Heap via struct na pilha</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Iteração Conforme Conclusão</strong></td>
+                        <td>Loops manuais com Task.WhenAny suscetíveis a complexidade elevada</td>
+                        <td>Combinador nativo Task.WhenEach integrado à sintaxe await foreach</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function alternarAba(nome) {
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(conteudo => conteudo.classList.remove('active'));
+
+            if (nome === 'stream') {
+                document.querySelectorAll('.tab-button')[0].classList.add('active');
+                document.getElementById('aba-stream').classList.add('active');
+            } else if (nome === 'valuetask') {
+                document.querySelectorAll('.tab-button')[1].classList.add('active');
+                document.getElementById('aba-valuetask').classList.add('active');
+            } else if (nome === 'wheneach') {
+                document.querySelectorAll('.tab-button')[2].classList.add('active');
+                document.getElementById('aba-wheneach').classList.add('active');
+            }
+        }
+
+        async function iniciarStream() {
+            const feed = document.getElementById('stream-feed');
+            feed.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/async/stream?total=8&intervaloMs=300');
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const itens = buffer.split('\n');
+                    buffer = itens.pop();
+
+                    for (const item of itens) {
+                        if (item.trim()) {
+                            try {
+                                const obj = JSON.parse(item);
+                                const div = document.createElement('div');
+                                div.className = 'stream-item';
+                                div.innerText = '[' + obj.timestamp.substring(11, 23) + '] ' + obj.descricao + ' (latência: ' + obj.latenciaMs + ' ms)';
+                                feed.appendChild(div);
+                                feed.scrollTop = feed.scrollHeight;
+                            } catch (e) {
+                                // Dados incompletos em stream
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                feed.innerHTML = '<div style="color: var(--danger);">Erro no streaming: ' + err + '</div>';
+            }
+        }
+
+        async function compararAlocacoes() {
+            const loading = document.getElementById('loading-valuetask');
+            const placeholder = document.getElementById('placeholder-valuetask');
+            const painel = document.getElementById('painel-valuetask');
+
+            loading.style.display = 'block';
+            placeholder.style.display = 'none';
+
+            try {
+                const res = await fetch('/api/async/comparar-alocacoes?repeticoes=100000');
+                const dados = await res.json();
+
+                document.getElementById('val-task-tempo').innerText = dados.modoTask.tempoMs + ' ms';
+                document.getElementById('val-task-memoria').innerText = dados.modoTask.megabytesAlocados + ' MB';
+
+                document.getElementById('val-vtask-tempo').innerText = dados.modoValueTask.tempoMs + ' ms';
+                document.getElementById('val-vtask-memoria').innerText = dados.modoValueTask.megabytesAlocados + ' MB';
+
+                document.getElementById('val-diagnostico').innerHTML = 
+                    '<strong>Diagnóstico de Alocação:</strong><br/>' +
+                    dados.diagnostico + ' Em 100.000 invocações imediatas, o Task alocou ' + dados.modoTask.megabytesAlocados + ' MB na Heap, enquanto o ValueTask alocou ' + dados.modoValueTask.megabytesAlocados + ' MB.';
+
+                painel.style.display = 'block';
+            } catch (err) {
+                alert('Erro na comparação: ' + err);
+                placeholder.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        async function executarWhenEach() {
+            const feed = document.getElementById('wheneach-feed');
+            const loading = document.getElementById('loading-wheneach');
+            feed.innerHTML = '';
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/async/when-each');
+                const dados = await response.json();
+
+                for (const item of dados) {
+                    const div = document.createElement('div');
+                    div.className = 'stream-item';
+                    div.innerText = item;
+                    feed.appendChild(div);
+                }
+            } catch (err) {
+                feed.innerHTML = '<div style="color: var(--danger);">Erro: ' + err + '</div>';
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
